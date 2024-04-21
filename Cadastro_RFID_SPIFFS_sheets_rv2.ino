@@ -7,6 +7,7 @@
     #include <FS.h> //isso precisa ser o primeiro, ou tudo trava e queima...
     #include "SPIFFS.h"
     #include <WiFi.h>
+    #include <PubSubClient.h>
     #include <AsyncTCP.h>
     #include <ESPAsyncWebServer.h>
     
@@ -45,6 +46,40 @@
 
     const char* ssid = "INTELBRAS";
     const char* password = "Anaenena";
+
+    // const char* mqtt_server = "broker.hivemq.com";
+    const char* mqtt_server = "broker.emqx.io";
+    const int mqtt_port = 1883;
+    const char* mqtt_topic = "joystickData";
+
+    WiFiClient espClient;
+    PubSubClient client(espClient);
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Mensagem recebida [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+
+void reconnect() {
+  while (!client.connected()) {
+    // Serial.print("Tentando se reconectar ao MQTT Broker...");
+    if (client.connect("ESP32Client")) {
+      // Serial.println("Conectado");
+      client.subscribe(mqtt_topic);
+    } else {
+      Serial.print("Falha na conexão, rc=");
+      Serial.print(client.state());
+      Serial.println(" Tentando novamente em 5 segundos");
+      delay(5000);
+    }
+  }
+}
+
     
     WiFiUDP ntpUDP;
     NTPClient timeClient(ntpUDP, "pool.ntp.org");
@@ -111,10 +146,10 @@
     //Inicializa o sistema de arquivos.
     bool initFS() {
       if (!SPIFFS.begin()) {
-        Serial.println("Erro ao abrir o sistema de arquivos");
+        // Serial.println("Erro ao abrir o sistema de arquivos");
         return false;
       }
-      Serial.println("Sistema de arquivos carregado com sucesso!");
+      // Serial.println("Sistema de arquivos carregado com sucesso!");
       return true;
     }
     //Lista todos os arquivos salvos na flash.
@@ -129,7 +164,7 @@
         str += "\r\n";
         file = root.openNextFile();
       }
-      Serial.print(str);
+      // Serial.print(str);
     }
     //Faça a leitura de um arquivo e retorne um vetor com todas as linhas.
     vector <String> readFile(String path) {
@@ -140,13 +175,13 @@
         myFile.close();
         return {};
       }
-      Serial.println("###################### - FILE- ############################");
+      // Serial.println("###################### - FILE- ############################");
       while (myFile.available()) {
         content = myFile.readStringUntil('\n');
         file_lines.push_back(content);
-        Serial.println(content);
+        // Serial.println(content);
       }
-      Serial.println("###########################################################");
+      // Serial.println("###########################################################");
       myFile.close();
       return file_lines;
     }
@@ -166,12 +201,12 @@
     bool addNewUser(String id, String data) {
       File myFile = SPIFFS.open(FILENAME, "a+");
       if (!myFile) {
-        Serial.println("Erro ao abrir arquivo!");
+        // Serial.println("Erro ao abrir arquivo!");
         myFile.close();
         return false;
       } else {
-        myFile.printf("<tr><td>%s</td><td>%s</td>\n", id.c_str(), data.c_str());
-        Serial.println("Arquivo gravado");
+        // myFile.printf("<tr><td>%s</td><td>%s</td>\n", id.c_str(), data.c_str());
+        // Serial.println("Arquivo gravado");
       }
       myFile.close();
       return true;
@@ -184,15 +219,15 @@
     
       File myFile = SPIFFS.open(FILENAME, "w");
       if (!myFile) {
-        Serial.println("Erro ao abrir arquivo!");
+        // Serial.println("Erro ao abrir arquivo!");
         myFile.close();
         return false;
       } else {
         for (int i = 0; i < users_data.size(); i++) {
-          if (i != user_index)
-            myFile.println(users_data[i]);
+          if (i != user_index);
+            // myFile.println(users_data[i]);
         }
-        Serial.println("Usuário removido");
+        // Serial.println("Usuário removido");
       }
       myFile.close();
       return true;
@@ -233,7 +268,7 @@
       listAllFiles();
       readFile(FILENAME);
     
-       GSheet.printf("ESP Google Sheet Client v%s\n\n", ESP_GOOGLE_SHEET_CLIENT_VERSION);  // Imprime a versão da biblioteca utilizada //<<sheets
+      //  GSheet.printf("ESP Google Sheet Client v%s\n\n", ESP_GOOGLE_SHEET_CLIENT_VERSION);  // Imprime a versão da biblioteca utilizada //<<sheets
     
     
       // Conectando ao Wi-Fi
@@ -246,6 +281,10 @@
          timeClient.begin();
       }
     Serial.println(WiFi.localIP());
+
+    client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
+
       //sheets
      // Set the callback for Google API access token generation status (for debug only)
         GSheet.setTokenCallback(tokenStatusCallback);  // Define a função de callback para o status do token de autenticação
@@ -297,15 +336,15 @@
         if (request->hasParam("info")) {
           info_data = request->getParam("info")->value();
           info_data.toUpperCase();
-          Serial.printf("info: %s\n", info_data.c_str());
+          // Serial.printf("info: %s\n", info_data.c_str());
         }
         if (request->hasParam("rfid")) {
           id_data = request->getParam("rfid")->value();
-          Serial.printf("ID: %s\n", id_data.c_str());
+          // Serial.printf("ID: %s\n", id_data.c_str());
         }
         if (request->hasParam("remove")) {
           String user_removed = request->getParam("remove")->value();
-          Serial.printf("Remover o usuário da posição : %s\n", user_removed.c_str());
+          // Serial.printf("Remover o usuário da posição : %s\n", user_removed.c_str());
           index_user_for_removal = user_removed.toInt();
           index_user_for_removal -= 1;
           request->send(SPIFFS, "/warning.html");
@@ -324,7 +363,7 @@
           request->send(SPIFFS, "/sucess.html", String(), false, processor);
         }
         else {
-          Serial.printf("Usuário numero %d ja existe no banco de dados\n", user_index);
+          // Serial.printf("Usuário numero %d ja existe no banco de dados\n", user_index);
           failure_msg = "Ja existe um usuário cadastrado.";
           request->send(SPIFFS, "/failure.html", String(), false, processor);
         }
@@ -348,6 +387,12 @@
     
     
     void loop() {
+     
+      if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+     
       // Procure por novos cartões.
       if (!mfrc522.PICC_IsNewCardPresent()) {
         return;
@@ -358,12 +403,12 @@
         String rfid_data = "";
         for (uint8_t i = 0; i < mfrc522.uid.size; i++)
         {
-          Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-          Serial.print(mfrc522.uid.uidByte[i], HEX);
+          // Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+          // Serial.print(mfrc522.uid.uidByte[i], HEX);
           rfid_data.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
           rfid_data.concat(String(mfrc522.uid.uidByte[i], HEX));
         }
-        Serial.println();
+        // Serial.println();
         rfid_data.toUpperCase();
         rfid_card = rfid_data;
     
@@ -378,17 +423,19 @@
     //usuarioEncontrado.replace("<td>", ""); // Remove a tag inicial <td>
     //usuarioEncontrado.replace("</td>", ""); // Remove a tag final </td>
        
+      client.publish(mqtt_topic, rfid_card.c_str());
+
         Serial.println("uidTag = " + uidTag);
         Serial.println("usuarioEncontrado = " + usuarioEncontrado);
     
       //   int user_index = findUser(users_data, id_data, info_data);
         
         if (user_index < 0) {
-          Serial.printf("Nenhum usuário encontrado\n");
+          // Serial.printf("Nenhum usuário encontrado\n");
           digitalWrite(LED_RED, HIGH);
         }
         else {
-          Serial.printf("Usuário %d encontrado\n", user_index);
+          // Serial.printf("Usuário %d encontrado\n", user_index);
           digitalWrite(LED_GREEN, HIGH);
     
           // Extrair a informação adicional do usuário
@@ -396,8 +443,8 @@
         int end = users_data[user_index].indexOf("</td>", start);  // Índice do final das informações
         if (start >= 0 && end >= 0) {
             info_data = users_data[user_index].substring(start, end);  // Extrair a informação entre as tags <td>
-            Serial.println("Informação adicional:");
-            Serial.println(info_data);
+            // Serial.println("Informação adicional:");
+            // Serial.println(info_data);
         } else {
             Serial.println("Erro ao extrair informação adicional do usuário");
         }
@@ -405,7 +452,7 @@
         delay(1000);
         digitalWrite(LED_GREEN, LOW);
         digitalWrite(LED_RED, LOW);
-        Serial.println("SAINDO");
+        // Serial.println("SAINDO");
       }
     
       //sheets
@@ -417,8 +464,8 @@
     
             FirebaseJson response;
     
-            Serial.println("\nAppend spreadsheet values...");
-            Serial.println("----------------------------");
+            // Serial.println("\nAppend spreadsheet values...");
+            // Serial.println("----------------------------");
     
             FirebaseJson valueRange;
     
@@ -439,9 +486,9 @@
       struct tm *localTime = localtime(&now);
      
     
-            Serial.print("Hora atual: ");
-            Serial.println(timeClient.getFormattedTime());
-            Serial.println(localTime);
+            // Serial.print("Hora atual: ");
+            // Serial.println(timeClient.getFormattedTime());
+            // Serial.println(localTime);
     
             char timeStr[20]; // Espaço para 20 caracteres, ajuste se necessário
     sprintf(timeStr, "%02d/%02d/%04d %02d:%02d:%02d",
@@ -461,27 +508,27 @@
             // Append values to the spreadsheet
             bool success = GSheet.values.append(&response /* returned response */, spreadsheetId /* spreadsheet Id to append */, "Sheet1!A1" /* range to append */, &valueRange /* data range to append */);
             if (success){
-                response.toString(Serial, true);  // Imprime a resposta do envio na serial
+                // response.toString(Serial, true);  // Imprime a resposta do envio na serial
                 valueRange.clear(); 
                 Serial.println("Dados enviados com sucesso para a planilha!");
                  }
             else{
-                Serial.println(GSheet.errorReason());
-                Serial.println("Erro ao enviar dados para a planilha!");
+                // Serial.println(GSheet.errorReason());
+                // Serial.println("Erro ao enviar dados para a planilha!");
             }
-            Serial.println();
-            Serial.println(ESP.getFreeHeap());
+            // Serial.println();
+            // Serial.println(ESP.getFreeHeap());
             
         }
     }
     
     void tokenStatusCallback(TokenInfo info){
         if (info.status == token_status_error){
-            GSheet.printf("Token info: type = %s, status = %s\n", GSheet.getTokenType(info).c_str(), GSheet.getTokenStatus(info).c_str());
-            GSheet.printf("Token error: %s\n", GSheet.getTokenError(info).c_str());
+            // GSheet.printf("Token info: type = %s, status = %s\n", GSheet.getTokenType(info).c_str(), GSheet.getTokenStatus(info).c_str());
+            // GSheet.printf("Token error: %s\n", GSheet.getTokenError(info).c_str());
         }
         else{
-            GSheet.printf("Token info: type = %s, status = %s\n", GSheet.getTokenType(info).c_str(), GSheet.getTokenStatus(info).c_str());
+            // GSheet.printf("Token info: type = %s, status = %s\n", GSheet.getTokenType(info).c_str(), GSheet.getTokenStatus(info).c_str());
         }
       //sheets
     }
