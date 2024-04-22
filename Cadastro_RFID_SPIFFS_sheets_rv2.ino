@@ -23,7 +23,19 @@
     #include <NTPClient.h>
     #include <WiFiUdp.h>
     #include <TimeLib.h>
+
+    #include <esp_now.h>
     
+    // Definição do nome do dispositivo
+#define DEVICE_NAME "ESP32"
+
+// esp 32-cam Endereço MAC: 24:DC:C3:AC:AD:FC
+// esp32 Endereço MAC: EC:64:C9:85:AE:B4
+// Estrutura para armazenar o endereço MAC do parceiro
+uint8_t partnerMacAddress[] = {0x24, 0xDC, 0xC3, 0xAC, 0xAD, 0xFC};
+
+
+
     //#define SS_PIN 4  //D2 SDA
     //#define RST_PIN 5 //D1 RST
     #define FILENAME "/Cadastro.txt"
@@ -251,6 +263,16 @@ void reconnect() {
       return msg;
     }
     
+    // Função de callback para processar mensagens recebidas
+void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
+  Serial.print("Mensagem ESPNOW recebida de ");
+  Serial.print((char*)mac_addr);
+  Serial.print(": ");
+  Serial.println((char*)data);
+}
+
+esp_now_peer_info_t peerInfo;
+
     void setup() {
       Serial.begin(115200);
     
@@ -284,6 +306,27 @@ void reconnect() {
 
     client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
+
+  // Inicializar o ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Erro ao inicializar o ESP-NOW");
+    return;
+  }
+
+  // Configurar a função de callback para receber mensagens
+  esp_now_register_recv_cb(OnDataRecv);
+
+  // Registrar o parceiro
+  // esp_now_peer_info_t peerInfo;
+  memcpy(peerInfo.peer_addr, partnerMacAddress, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Falha ao adicionar o parceiro");
+    return;
+  }
+
 
       //sheets
      // Set the callback for Google API access token generation status (for debug only)
@@ -531,4 +574,17 @@ void reconnect() {
             // GSheet.printf("Token info: type = %s, status = %s\n", GSheet.getTokenType(info).c_str(), GSheet.getTokenStatus(info).c_str());
         }
       //sheets
+
+      // Enviar a mensagem
+  const char* message = "Hello World";
+  esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t*)message, strlen(message));
+  if (result == ESP_OK) {
+    Serial.println("Mensagem enviada com sucesso");
+  } else {
+    Serial.println("Erro ao enviar a mensagem");
+  }
+
+  delay(5000); // Espera 5 segundos antes de enviar novamente
+
+
     }
