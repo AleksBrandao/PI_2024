@@ -79,7 +79,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void reconnect() {
   while (!client.connected()) {
-    // Serial.print("Tentando se reconectar ao MQTT Broker...");
+    // Serial.println("Tentando se reconectar ao MQTT Broker...");
     if (client.connect("ESP32Client")) {
       // Serial.println("Conectado");
       client.subscribe(mqtt_topic);
@@ -554,6 +554,18 @@ esp_now_peer_info_t peerInfo;
                 // response.toString(Serial, true);  // Imprime a resposta do envio na serial
                 valueRange.clear(); 
                 Serial.println("Dados enviados com sucesso para a planilha!");
+
+                      // Enviar a mensagem
+  // const char* message = "Hello World";
+  String message = String(uidTag); // Converte o UID para String
+  esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t*)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
+  if (result == ESP_OK) {
+    Serial.println("Mensagem ESPNOW enviada com sucesso");
+  } else {
+    Serial.println("Erro ao enviar a mensagem");
+  }
+
+  
                  }
             else{
                 // Serial.println(GSheet.errorReason());
@@ -575,16 +587,16 @@ esp_now_peer_info_t peerInfo;
         }
       //sheets
 
-      // Enviar a mensagem
-  const char* message = "Hello World";
-  esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t*)message, strlen(message));
-  if (result == ESP_OK) {
-    Serial.println("Mensagem enviada com sucesso");
-  } else {
-    Serial.println("Erro ao enviar a mensagem");
-  }
+  //     // Enviar a mensagem
+  // const char* message = "Hello World";
+  // esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t*)message, strlen(message));
+  // if (result == ESP_OK) {
+  //   Serial.println("Mensagem ESPNOW enviada com sucesso");
+  // } else {
+  //   Serial.println("Erro ao enviar a mensagem");
+  // }
 
-  delay(5000); // Espera 5 segundos antes de enviar novamente
+  // delay(5000); // Espera 5 segundos antes de enviar novamente
 
 
     }
