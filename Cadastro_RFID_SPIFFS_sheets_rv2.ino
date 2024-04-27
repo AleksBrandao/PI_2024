@@ -3,7 +3,8 @@
     // https://www.arduinoecia.com.br/controle-de-acesso-modulo-rfid-rc522/ = PINAGEM RDID
     // https://chat.openai.com/c/f2c64e55-cabb-4b43-9a30-00db7d6e8aa9 CHATGPT
     
-    
+    #include <Arduino.h>
+
     #include <FS.h> //isso precisa ser o primeiro, ou tudo trava e queima...
     #include "SPIFFS.h"
     #include <WiFi.h>
@@ -25,6 +26,14 @@
     #include <TimeLib.h>
 
     #include <esp_now.h>
+
+    #include <Firebase_ESP_Client.h>
+
+    //Provide the token generation process info.
+#include "addons/TokenHelper.h"
+//Provide the RTDB payload printing info and other helper functions.
+#include "addons/RTDBHelper.h"
+
     
     // Definição do nome do dispositivo
 #define DEVICE_NAME "ESP32"
@@ -58,6 +67,27 @@ uint8_t partnerMacAddress[] = {0x24, 0xDC, 0xC3, 0xAC, 0xAD, 0xFC};
 
     const char* ssid = "INTELBRAS";
     const char* password = "Anaenena";
+
+    // Insert Firebase project API Key
+#define API_KEY "AIzaSyAJn68X4FRmxdk8NMu0ir9LwRsrIr7j7F0"
+
+// Insert RTDB URLefine the RTDB URL */
+#define DATABASE_URL "https://reconhecimento-facial-cbae7-default-rtdb.firebaseio.com" 
+
+#define USER_EMAIL "aleks.brandao@gmail.com"
+#define USER_PASSWORD "reconhecimento"
+
+//Define Firebase Data object
+FirebaseData fbdo;
+
+FirebaseAuth auth;
+FirebaseConfig config;
+
+unsigned long sendDataPrevMillis = 0;
+int count = 0;
+bool signupOK = false;
+
+
 
     // const char* mqtt_server = "broker.hivemq.com";
     const char* mqtt_server = "broker.emqx.io";
@@ -436,6 +466,44 @@ esp_now_peer_info_t peerInfo;
   }
   client.loop();
      
+      if (Firebase.ready() && signupOK && (millis() - sendDataPrevMillis > 60000 || sendDataPrevMillis == 0)){
+    sendDataPrevMillis = millis();
+    // Write an Int number on the database path test/int
+    if (Firebase.RTDB.pushInt(&fbdo, "test/int", count)){
+      Serial.println("PASSED");
+      Serial.println("PATH: " + fbdo.dataPath());
+      Serial.println("TYPE: " + fbdo.dataType());
+    }
+    else {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + fbdo.errorReason());
+    }
+    count++;
+    
+    // Write an Float number on the database path test/float
+    if (Firebase.RTDB.pushFloat(&fbdo, "test/float", 0.01 + random(0,100))){
+      Serial.println("PASSED");
+      Serial.println("PATH: " + fbdo.dataPath());
+      Serial.println("TYPE: " + fbdo.dataType());
+    }
+    else {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + fbdo.errorReason());
+    }
+
+     // Write an Device name on the database path test/Dev
+    if (Firebase.RTDB.pushDev(&fbdo, "test/dev", DEVICE_NAME)){
+      Serial.println("PASSED");
+      Serial.println("PATH: " + fbdo.dataPath());
+      Serial.println("TYPE: " + fbdo.dataType());
+    }
+    else {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + fbdo.errorReason());
+    }
+
+  }
+
       // Procure por novos cartões.
       if (!mfrc522.PICC_IsNewCardPresent()) {
         return;
