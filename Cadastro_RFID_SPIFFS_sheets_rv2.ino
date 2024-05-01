@@ -51,6 +51,8 @@
 
 // Define Firebase Data object
 FirebaseData fbdo;
+String uidTag;
+String dateTime; // Altere para String em vez de const char*
 
 FirebaseAuth auth;
 FirebaseConfig config;
@@ -78,11 +80,11 @@ uint8_t partnerMacAddress[] = {0x24, 0xDC, 0xC3, 0xAC, 0xAD, 0xFC};
 
 using namespace std;
 
-// const char* ssid = "VIVOFIBRA-5221";
-// const char* password = "kPcsBo9tdC";
+const char* ssid = "VIVOFIBRA-5221";
+const char* password = "kPcsBo9tdC";
 
-const char *ssid = "INTELBRAS";
-const char *password = "Anaenena";
+// const char *ssid = "INTELBRAS";
+// const char *password = "Anaenena";
 
 // Insert Firebase project API Key
 // #define API_KEY "AIzaSyAJn68X4FRmxdk8NMu0ir9LwRsrIr7j7F0"
@@ -154,7 +156,7 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org");
 // #define CLIENT_EMAIL "ab-reconhecimento@reconhecimento-418220.iam.gserviceaccount.com"  // Substituir pelo email de cliente da sua conta de serviço
 
 // Service Account's private key
-// const char PRIVATE_KEY[] PROGMEM = "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDHk1Doobik55WT\najAiMWcb1YHvAJD3cU9qemk/1ErAiuLXrDzcp/kg4r6qE1UnIHgGlMXrUiV3Eewi\nTNrIipz9ayemPgeDA92yxSoysb8cNcLh5bfEWcY+wmwizySeycD+PuNjsnrvwRGg\nNzuaDo0eEKEf6/vAhOY/R1O6XS1C7Wb/pFN/7wrfmfF5mFt//BosZDA3I53YPrbn\nPZ3SthTjLycGWfciF4Y6zCrRPFxKWZun2rekRVdg4jNvEc0G1TOgzn/+g5f3YvQp\nRP9QyvYgl2rCjgRW4L/YYRFUrfuWoTgyffj44AD5XEM+S3tlCmAVeIV1eNMja0M3\n8Cf2znNxAgMBAAECggEAAvzuHCOIDA5XEhX9NT/ZL+SfEsTcMXDh/AxBN+ZN6GAp\nSV/FPquppP/xaUK2QUprnZ6b2tF3/ovB8IQHI7OWlOE7iVzE+EWmK7YRvbX6pbma\nKroUSaVrR0yEzwhxVLVyKnmm0NBEO1jKx/ktDw9gIRbQO2tT3DlT01dLgL8XzW28\nHR4VMaUu5Y5UXmB0IlWvOStv3eZUgu9wyU/Oj6y6NqNOLD/yNRgshJ3jAOICeLNi\neQMweSMQPLGevZJurhWFP8K0mbkNHXgjcbVx3COGAzveiUlgmlAPY544Do6DL7TB\n/YzZLjpMFZPhGgxVuRMj65lYUzmZQVfZsmLsowi2QQKBgQD5Ndj4dEzBQvAkbX0Z\n47Jom4oaq7pYY2K23LL1ttclEU+GVHjHVhyO2EF0Avsy9pcf2J+eZ8Oi3/ZXtdRc\nztmR7AWnELakxEV4KvvsDEkLTUG+5bjuf1voYiU2nk1z5LgFpSHGs8Dm5QOZxhmS\nui0lZctRjYECII5HhI2ynA3P4QKBgQDNA0h0ELMByllluCy740dtnfEyeKajpjRK\nYEoB9kpvqir9tAMMzbJA+0Vb0lPlwLliBJCfxCUS8Am3V79pMRfBPt5Mpao0iiLd\nxhySy29+uQ7JmPR3Szgrp4Qnpnn93Aog798LTK6+y9BhZG0mZ8hY8WBojr+QfxRq\nJGOdk7ZVkQKBgCQwcqKZ2O+TteXEVI9m5miUdbiryXK+c/5UDFTsSU/jtKWwLJ3d\n3mXL961OJYZgEtAYGA3byagkV9Si3gTgMO4k1SlOnwdMTT5HF7BOlGjkvjBnkbRo\noEMdxYOp91tmEmcXdNEzF0cwaJZzExGgoZ+1qZHdN6fEbITsNduDF+phAoGABT75\nQqcOvZP896Jf2qr1L/PjsSPvN67QFbsjCavQuczD7twFW/WDgzAq1S+rn+xvkfeF\n7+CoBjUIOp3PMxTjg7llHNb8ZP3H6J7iKkt0XezEWRpF3yuYk11k/1K+OmXACJm6\nvmJG8nDqsyNLu7jaIpSCoApPEpZ94j1uIyEdgFECgYA/QVn56OuMYi4vDQjvfreO\n3XkN4o+F0zbwpJJpfHi5gEddfnJwJ1fN8Ccf2ho3m06BE6MweoHAlnGYWf3MBjbJ\n+ard7K/uN0E8IdbVE63KACwucf0l9a7XW/He6ZSzKHMJXq8YDRhiWAUJTBd7J9JS\n33ROANoJd8um45G+1T3HXw==\n-----END PRIVATE KEY-----\n";
+// const char PRIVATE_KEY[] PROGMEM = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDASfNTb7UYANaO\n4VmalkUrh733oLvsKdL6UyQXc9g3DzowVSLQG+dvBRanlDJn35WM1sLeiriMjtqc\nhxR8eA40+Bvjrcnt6iUIZovzL7LFvn69hk2IpuLWfaFeYWt71ty67+uKWiPuY28c\naTlO8ZHaN5adHUqn1aEzHQZBY0Is6YeTsRoSP8gaymCgdPzZ0l01OkPPX7w2dMXP\nSe+gG/TX+EbCO8aAI0FZBorSuzjd8YtP3hh+hJApXb+zE4uJv5KGOCfCy0rzqN0o\np9wWf94mfPM7TyDkGYLH4mXCTTVKvYJBW1jqbTQaBiCSoBG1NSHaoWLrbnUUK8bA\nGmZcBR6LAgMBAAECggEAIk2vAn4FrQQNQs0R6qGPMm5TZfc/PyjQ8gZeBG8Orffh\n9hhiDwVDWstqGLg36873w3nWptPRi4W6mzz/2xqh0jJG622n/fEM7Tw6EEa8mklb\nG913PH8lLYWZAZjYj22r0A+YEgT1rwP/IO7mod43mlnbXSkKFfnm+ZLeeFDIT/GD\noJx3YlAx1nX1deQWs7vf9b4IwM6WEPtbpQM+5LPxZM+A9O8CLIKfch44B9J55SKf\nXSI9MYe7b8bM8HuxRyz0fU+9QlbfF4Wl1n49wUSQBxvt8snwcdKtRG12sGs9Myeu\n8mVa1S61MnxJ4rzCtyjhIVBxCsvY/lmVZrtoZCs+/QKBgQD5fbKDs+9gfW58yxP8\nTZjP44x/vbAp6k50mdY187kPoWwlfQnV1I0uOAlTsljPXnH0TaK/ozu7InfrI06W\njx2ReDdXk1faD8jO3EIWPCuGpDkqRPtOEz17FL4wNJa+QeFIDXD8ypr/NzOzIMvb\ndJyprX3TnWFn1FDUDclHYSmurQKBgQDFTjYHXmv9n1sgFZatww0kZo6V8reTy72j\nsd5zHSUGgDKZ7lKNXs+9TR4OdAzCmjYgw2uRAOz//4ZFNirCAeiBpUHowx3LmQG2\npQgmZ3c6Hs1QaFrICYNsyBG3GvTB2HBzqCUlctQzp9Vzt6RWOPwMF5o1L4evsYGN\nFID7x67BFwKBgQC9er5SEhzx7jE0a9Mw4gn1kP7KoViibMXK/m7WqNRaz6Df09fd\nY0EZ4gsLWr7iNvtarH+3BZS+qg3jMfxkkirFqUR2qXumLCi5GkTCuE3iQuT7ekpV\n4Hzn9jf/SmFV+5jJ7RNrmcAfpmAIYhcRA75bi1ytk7A/d9svQY0lPeC3PQKBgBaw\nF6ZhRSm02VWnJdx1QV2eLWcwsctc8kGQgnPaNhe5RhhNP1DiRiEObRZcYds+wFqk\nHgpegOIvD9GFmQUWExZVWm7ZgOOYhInsEDPaUets/07vsQCvl1065E6Z2usvaD7k\nZuEXgy8tbW4Q/+SqSNFbJXBYNtINJ0iBwxMwsvehAoGBAIwKcTXed5SlKiPxFwtF\nP9/yU+dq2HnUMusNI+Cnh80ICg8oFPDBoiK0Ij9KRLileFQWoD0RaHk2XIAVfbBz\nsRfkSJxv6X9hKdzPNuR7D2CdWhDNtwmNFUWwz/dvT4ityc4Kp26r/SpSbiXZCAwI\nrjop95RKR+whIxs+5Tu/El3r\n-----END PRIVATE KEY-----\n";
 // Substituir pela chave privada da sua conta de serviço
 
 // The ID of the spreadsheet where you'll publish the data
@@ -171,7 +173,7 @@ unsigned long timerDelay = 500; // Intervalo de tempo em milissegundos entre os 
 const char *ntpServer = "time.google.com"; // Servidor NTP para obter o tempo em formato epoch
 const long gmtOffset_sec = -3 * 3600;  // -10800 segundos
 const int   daylightOffset_sec = 0;    // Offset para horário de verão, se necessário
-String dateTime;  // Variável para armazenar a data e hora
+// String dateTime;  // Variável para armazenar a data e hora
 
 
 // Variable to save current epoch time
@@ -217,10 +219,10 @@ bool initFS()
 {
   if (!SPIFFS.begin())
   {
-    // Serial.println("Erro ao abrir o sistema de arquivos");
+    Serial.println("Erro ao abrir o sistema de arquivos");
     return false;
   }
-  // Serial.println("Sistema de arquivos carregado com sucesso!");
+  Serial.println("Sistema de arquivos carregado com sucesso!");
   return true;
 }
 // Lista todos os arquivos salvos na flash.
@@ -237,7 +239,7 @@ void listAllFiles()
     str += "\r\n";
     file = root.openNextFile();
   }
-  // Serial.print(str);
+  Serial.print(str);
 }
 // Faça a leitura de um arquivo e retorne um vetor com todas as linhas.
 vector<String> readFile(String path)
@@ -250,14 +252,14 @@ vector<String> readFile(String path)
     myFile.close();
     return {};
   }
-  // Serial.println("###################### - FILE- ############################");
+  Serial.println("###################### - FILE- ############################");
   while (myFile.available())
   {
     content = myFile.readStringUntil('\n');
     file_lines.push_back(content);
-    // Serial.println(content);
+    Serial.println(content);
   }
-  // Serial.println("###########################################################");
+  Serial.println("###########################################################");
   myFile.close();
   return file_lines;
 }
@@ -282,14 +284,14 @@ bool addNewUser(String id, String data)
   File myFile = SPIFFS.open(FILENAME, "a+");
   if (!myFile)
   {
-    // Serial.println("Erro ao abrir arquivo!");
+    Serial.println("Erro ao abrir arquivo!");
     myFile.close();
     return false;
   }
   else
   {
-    // myFile.printf("<tr><td>%s</td><td>%s</td>\n", id.c_str(), data.c_str());
-    // Serial.println("Arquivo gravado");
+    myFile.printf("<tr><td>%s</td><td>%s</td>\n", id.c_str(), data.c_str());
+    Serial.println("Arquivo gravado");
   }
   myFile.close();
   return true;
@@ -304,7 +306,7 @@ bool removeUser(int user_index)
   File myFile = SPIFFS.open(FILENAME, "w");
   if (!myFile)
   {
-    // Serial.println("Erro ao abrir arquivo!");
+    Serial.println("Erro ao abrir arquivo!");
     myFile.close();
     return false;
   }
@@ -314,9 +316,9 @@ bool removeUser(int user_index)
     {
       if (i != user_index)
         ;
-      // myFile.println(users_data[i]);
+      myFile.println(users_data[i]);
     }
-    // Serial.println("Usuário removido");
+    Serial.println("Usuário removido");
   }
   myFile.close();
   return true;
@@ -343,14 +345,7 @@ String processor(const String &var)
   return msg;
 }
 
-// Função de callback para processar mensagens recebidas
-void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
-{
-  Serial.print("Mensagem ESPNOW recebida de ");
-  Serial.print((char *)mac_addr);
-  Serial.print(": ");
-  Serial.println((char *)data);
-}
+
 
 esp_now_peer_info_t peerInfo;
 
@@ -486,15 +481,15 @@ void setup()
         if (request->hasParam("info")) {
           info_data = request->getParam("info")->value();
           info_data.toUpperCase();
-          // Serial.printf("info: %s\n", info_data.c_str());
+          Serial.printf("info: %s\n", info_data.c_str());
         }
         if (request->hasParam("rfid")) {
           id_data = request->getParam("rfid")->value();
-          // Serial.printf("ID: %s\n", id_data.c_str());
+          Serial.printf("ID: %s\n", id_data.c_str());
         }
         if (request->hasParam("remove")) {
           String user_removed = request->getParam("remove")->value();
-          // Serial.printf("Remover o usuário da posição : %s\n", user_removed.c_str());
+          Serial.printf("Remover o usuário da posição : %s\n", user_removed.c_str());
           index_user_for_removal = user_removed.toInt();
           index_user_for_removal -= 1;
           request->send(SPIFFS, "/warning.html");
@@ -513,7 +508,7 @@ void setup()
           request->send(SPIFFS, "/sucess.html", String(), false, processor);
         }
         else {
-          // Serial.printf("Usuário numero %d ja existe no banco de dados\n", user_index);
+          Serial.printf("Usuário numero %d ja existe no banco de dados\n", user_index);
           failure_msg = "Ja existe um usuário cadastrado.";
           request->send(SPIFFS, "/failure.html", String(), false, processor);
         } });
@@ -529,8 +524,31 @@ void setup()
 }
 
 // Declare as variáveis globais fora de qualquer função
-String uidTag;            // Variável global para armazenar o UID da tag
+// String uidTag;            // Variável global para armazenar o UID da tag
 String usuarioEncontrado; // Variável global para armazenar o usuário encontrado
+// Função de callback para processar mensagens recebidas
+void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
+{
+  Serial.print("Mensagem ESPNOW recebida de ");
+  Serial.print((char *)mac_addr);
+  Serial.print(": ");
+  Serial.println((char *)data);
+
+if (Firebase.ready() && signupOK) {
+   
+updateDateTime();  // Atualiza a variável dateTime 
+  Firebase.RTDB.pushString(&fbdo, "users/id", "uidTag");
+  Firebase.RTDB.pushString(&fbdo, "users/data", "01/05/2024 14:30:00");
+  // Firebase.RTDB.pushString(&fbdo, "users/email", "aleks.brandao@gmail.com");
+  Firebase.RTDB.pushString(&fbdo, "users/device", "CAM");
+    
+    }
+    else
+    {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + fbdo.errorReason());
+    }
+}
 
 void loop()
 {
@@ -599,19 +617,39 @@ void loop()
     client.publish(mqtt_topic, rfid_card.c_str());
 
     Serial.println("uidTag = " + uidTag);
-    Serial.println("usuarioEncontrado = " + usuarioEncontrado);
+    // Serial.println("usuarioEncontrado = " + usuarioEncontrado);
 
     //   int user_index = findUser(users_data, id_data, info_data);
 
     if (user_index < 0)
     {
-      // Serial.printf("Nenhum usuário encontrado\n");
+      Serial.printf("Nenhum usuário encontrado\n");
       digitalWrite(LED_RED, HIGH);
+      String message = String("start_detect");
+      esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
+      if (result == ESP_OK)
+      {
+        Serial.println("Mensagem ESPNOW enviada com sucesso");
+      }
+      else
+      {
+        Serial.println("Erro ao enviar a mensagem");
+      }
     }
     else
     {
-      // Serial.printf("Usuário %d encontrado\n", user_index);
+      Serial.printf("Usuário %d encontrado\n", user_index);
       digitalWrite(LED_GREEN, HIGH);
+      String message = String("start_recognition");
+      esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
+      if (result == ESP_OK)
+      {
+        Serial.println("Mensagem ESPNOW enviada com sucesso");
+      }
+      else
+      {
+        Serial.println("Erro ao enviar a mensagem");
+      }
 
       // Extrair a informação adicional do usuário
       int start = users_data[user_index].indexOf("<td>") + 25;  // Índice do início das informações
@@ -645,12 +683,25 @@ void loop()
 updateDateTime();  // Atualiza a variável dateTime 
 
       Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
-      Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
-      // Firebase.RTDB.pushString(&fbdo, "users/email", "aleks.brandao@gmail.com");
-      Firebase.RTDB.pushString(&fbdo, "users/device", DEVICE_NAME);
+      Firebase.RTDB.pushString(&fbdo, "users/data", "01/05/2024 14:30:00");
+      // // Firebase.RTDB.pushString(&fbdo, "users/email", "aleks.brandao@gmail.com");
+      Firebase.RTDB.pushString(&fbdo, "users/device", "RFID");
       // Firebase.RTDB.pushString(&fbdo, "users/nome", "Aleks");
       // Firebase.RTDB.pushString(&fbdo, "users/tipo", "A");
       // Firebase.RTDB.pushString(&fbdo, "users/usuario", "Aleks");
+
+  //       String message = String("start_recognition");                                                                      // Converte o UID para String
+  // esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
+  // if (result == ESP_OK)
+  // {
+  //   Serial.println("Mensagem ESPNOW enviada com sucesso");
+  // }
+  // else
+  // {
+  //   Serial.println("Erro ao enviar a mensagem");
+  // }
+
+
       
     }
     else
@@ -716,16 +767,16 @@ updateDateTime();  // Atualiza a variável dateTime
 
   // Enviar a mensagem
   // const char* message = "Hello World";
-  String message = String(uidTag);                                                                      // Converte o UID para String
-  esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
-  if (result == ESP_OK)
-  {
-    Serial.println("Mensagem ESPNOW enviada com sucesso");
-  }
-  else
-  {
-    Serial.println("Erro ao enviar a mensagem");
-  }
+  // String message = String(uidTag);                                                                      // Converte o UID para String
+  // esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
+  // if (result == ESP_OK)
+  // {
+  //   Serial.println("Mensagem ESPNOW enviada com sucesso");
+  // }
+  // else
+  // {
+  //   Serial.println("Erro ao enviar a mensagem");
+  // }
 
   //  }
   // else{
