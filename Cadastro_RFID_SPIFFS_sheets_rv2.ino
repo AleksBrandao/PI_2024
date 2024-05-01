@@ -70,44 +70,44 @@ const char *password = "kPcsBo9tdC";
 
 // #define USER_EMAIL "aleks.brandao@gmail.com"
 // #define USER_PASSWORD "reconhecimento"
-const char *mqtt_server = "broker.emqx.io";
-const int mqtt_port = 1883;
-const char *mqtt_topic = "joystickData";
+// const char *mqtt_server = "broker.emqx.io";
+// const int mqtt_port = 1883;
+// const char *mqtt_topic = "joystickData";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-void callback(char *topic, byte *payload, unsigned int length)
-{
-  Serial.print("Mensagem recebida [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++)
-  {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
-}
+// void callback(char *topic, byte *payload, unsigned int length)
+// {
+//   Serial.print("Mensagem recebida [");
+//   Serial.print(topic);
+//   Serial.print("] ");
+//   for (int i = 0; i < length; i++)
+//   {
+//     Serial.print((char)payload[i]);
+//   }
+//   Serial.println();
+// }
 
-void reconnect()
-{
-  while (!client.connected())
-  {
-    // Serial.println("Tentando se reconectar ao MQTT Broker...");
-    if (client.connect("ESP32Client"))
-    {
-      // Serial.println("Conectado");
-      client.subscribe(mqtt_topic);
-    }
-    else
-    {
-      // Serial.print("Falha na conexão, rc=");
-      // Serial.print(client.state());
-      // Serial.println(" Tentando novamente em 5 segundos");
-      // delay(5000);
-    }
-  }
-}
+// void reconnect()
+// {
+//   while (!client.connected())
+//   {
+//     // Serial.println("Tentando se reconectar ao MQTT Broker...");
+//     if (client.connect("ESP32Client"))
+//     {
+//       // Serial.println("Conectado");
+//       client.subscribe(mqtt_topic);
+//     }
+//     else
+//     {
+//       // Serial.print("Falha na conexão, rc=");
+//       // Serial.print(client.state());
+//       // Serial.println(" Tentando novamente em 5 segundos");
+//       // delay(5000);
+//     }
+//   }
+// }
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org");
@@ -340,8 +340,8 @@ void setup()
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
 
-  client.setServer(mqtt_server, mqtt_port);
-  client.setCallback(callback);
+  // client.setServer(mqtt_server, mqtt_port);
+  // client.setCallback(callback);
 
   // Inicializar o ESP-NOW
   if (esp_now_init() != ESP_OK)
@@ -457,8 +457,8 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
   {
 
     updateDateTime(); // Atualiza a variável dateTime
-    Firebase.RTDB.pushString(&fbdo, "users/id", "uidTag");
-    Firebase.RTDB.pushString(&fbdo, "users/data", "01/05/2024 14:30:00");
+    Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
+    Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
     Firebase.RTDB.pushString(&fbdo, "users/device", "CAM");
   }
   else
@@ -471,11 +471,11 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 void loop()
 {
 
-  if (!client.connected())
-  {
-    reconnect();
-  }
-  client.loop();
+  // if (!client.connected())
+  // {
+  //   reconnect();
+  // }
+  // client.loop();
 
   // Procure por novos cartões.
   if (!mfrc522.PICC_IsNewCardPresent())
@@ -502,7 +502,7 @@ void loop()
     int user_index = findUser(users_data, rfid_data, "");
 
     uidTag = rfid_data;
-    client.publish(mqtt_topic, rfid_card.c_str());
+    // client.publish(mqtt_topic, rfid_card.c_str());
 
     Serial.println("uidTag = " + uidTag);
 
@@ -557,7 +557,7 @@ void loop()
 
       updateDateTime(); // Atualiza a variável dateTime
       Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
-      Firebase.RTDB.pushString(&fbdo, "users/data", "01/05/2024 14:30:00");
+      Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
       Firebase.RTDB.pushString(&fbdo, "users/device", "RFID");
     }
     else
