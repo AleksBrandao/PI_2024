@@ -7,45 +7,31 @@
 // Firebase_ESP_Client em 2.3.7
 
 #include <Arduino.h>
-
 #include <FS.h> //isso precisa ser o primeiro, ou tudo trava e queima...
 #include "SPIFFS.h"
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-
 #include <SPI.h>
 #include <MFRC522.h>
 #include <vector>
-
 #include "time.h" //<<< sheets
-// #include <ESP_Google_Sheet_Client.h>//<<< sheets
-// For SD/SD_MMC mounting helper//<<< sheets
-// #include <GS_SDHelper.h>//<<< sheets
-
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include <TimeLib.h>
-
 #include <esp_now.h>
-
 #include <Firebase_ESP_Client.h>
-
 // Provide the token generation process info.
 #include "addons/TokenHelper.h"
 // Provide the RTDB payload printing info and other helper functions.
 #include "addons/RTDBHelper.h"
-
 // Definição do nome do dispositivo
 #define DEVICE_NAME "ESP32RFID"
-
 // Insert Firebase project API Key
 #define API_KEY "AIzaSyAJn68X4FRmxdk8NMu0ir9LwRsrIr7j7F0"
-
 // Insert RTDB URLefine the RTDB URL */
 #define DATABASE_URL "https://reconhecimento-facial-cbae7-default-rtdb.firebaseio.com"
-
 #define USER_EMAIL "aleks.brandao@gmail.com"
 #define USER_PASSWORD "reconhecimento"
 
@@ -53,7 +39,6 @@
 FirebaseData fbdo;
 String uidTag;
 String dateTime; // Altere para String em vez de const char*
-
 FirebaseAuth auth;
 FirebaseConfig config;
 
@@ -66,12 +51,9 @@ bool signupOK = false;
 // Estrutura para armazenar o endereço MAC do parceiro
 uint8_t partnerMacAddress[] = {0x24, 0xDC, 0xC3, 0xAC, 0xAD, 0xFC};
 
-//#define SS_PIN 4  //D2 SDA
-//#define RST_PIN 5 //D1 RST
 #define FILENAME "/Cadastro.txt"
 #define LED_RED 15  // D3
 #define LED_GREEN 2 // D4
-
 #define SDA_PIN 21  // ok
 #define SCK_PIN 18  // ok
 #define MOSI_PIN 23 // ok
@@ -80,32 +62,14 @@ uint8_t partnerMacAddress[] = {0x24, 0xDC, 0xC3, 0xAC, 0xAD, 0xFC};
 
 using namespace std;
 
-const char* ssid = "VIVOFIBRA-5221";
-const char* password = "kPcsBo9tdC";
+const char *ssid = "VIVOFIBRA-5221";
+const char *password = "kPcsBo9tdC";
 
 // const char *ssid = "INTELBRAS";
 // const char *password = "Anaenena";
 
-// Insert Firebase project API Key
-// #define API_KEY "AIzaSyAJn68X4FRmxdk8NMu0ir9LwRsrIr7j7F0"
-
-// // Insert RTDB URLefine the RTDB URL */
-// #define DATABASE_URL "https://reconhecimento-facial-cbae7-default-rtdb.firebaseio.com"
-
 // #define USER_EMAIL "aleks.brandao@gmail.com"
 // #define USER_PASSWORD "reconhecimento"
-
-// Define Firebase Data object
-//  FirebaseData fbdo;
-
-// FirebaseAuth auth;
-// FirebaseConfig config;
-
-// unsigned long sendDataPrevMillis = 0;
-// int count = 0;
-// bool signupOK = false;
-
-// const char* mqtt_server = "broker.hivemq.com";
 const char *mqtt_server = "broker.emqx.io";
 const int mqtt_port = 1883;
 const char *mqtt_topic = "joystickData";
@@ -147,37 +111,14 @@ void reconnect()
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org");
-
-//<<sheets
-// Google Project ID
-// #define PROJECT_ID "114777749843614379837"  // Substituir pelo ID do seu projeto do Google
-
-// Service Account's client email
-// #define CLIENT_EMAIL "ab-reconhecimento@reconhecimento-418220.iam.gserviceaccount.com"  // Substituir pelo email de cliente da sua conta de serviço
-
-// Service Account's private key
-// const char PRIVATE_KEY[] PROGMEM = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDASfNTb7UYANaO\n4VmalkUrh733oLvsKdL6UyQXc9g3DzowVSLQG+dvBRanlDJn35WM1sLeiriMjtqc\nhxR8eA40+Bvjrcnt6iUIZovzL7LFvn69hk2IpuLWfaFeYWt71ty67+uKWiPuY28c\naTlO8ZHaN5adHUqn1aEzHQZBY0Is6YeTsRoSP8gaymCgdPzZ0l01OkPPX7w2dMXP\nSe+gG/TX+EbCO8aAI0FZBorSuzjd8YtP3hh+hJApXb+zE4uJv5KGOCfCy0rzqN0o\np9wWf94mfPM7TyDkGYLH4mXCTTVKvYJBW1jqbTQaBiCSoBG1NSHaoWLrbnUUK8bA\nGmZcBR6LAgMBAAECggEAIk2vAn4FrQQNQs0R6qGPMm5TZfc/PyjQ8gZeBG8Orffh\n9hhiDwVDWstqGLg36873w3nWptPRi4W6mzz/2xqh0jJG622n/fEM7Tw6EEa8mklb\nG913PH8lLYWZAZjYj22r0A+YEgT1rwP/IO7mod43mlnbXSkKFfnm+ZLeeFDIT/GD\noJx3YlAx1nX1deQWs7vf9b4IwM6WEPtbpQM+5LPxZM+A9O8CLIKfch44B9J55SKf\nXSI9MYe7b8bM8HuxRyz0fU+9QlbfF4Wl1n49wUSQBxvt8snwcdKtRG12sGs9Myeu\n8mVa1S61MnxJ4rzCtyjhIVBxCsvY/lmVZrtoZCs+/QKBgQD5fbKDs+9gfW58yxP8\nTZjP44x/vbAp6k50mdY187kPoWwlfQnV1I0uOAlTsljPXnH0TaK/ozu7InfrI06W\njx2ReDdXk1faD8jO3EIWPCuGpDkqRPtOEz17FL4wNJa+QeFIDXD8ypr/NzOzIMvb\ndJyprX3TnWFn1FDUDclHYSmurQKBgQDFTjYHXmv9n1sgFZatww0kZo6V8reTy72j\nsd5zHSUGgDKZ7lKNXs+9TR4OdAzCmjYgw2uRAOz//4ZFNirCAeiBpUHowx3LmQG2\npQgmZ3c6Hs1QaFrICYNsyBG3GvTB2HBzqCUlctQzp9Vzt6RWOPwMF5o1L4evsYGN\nFID7x67BFwKBgQC9er5SEhzx7jE0a9Mw4gn1kP7KoViibMXK/m7WqNRaz6Df09fd\nY0EZ4gsLWr7iNvtarH+3BZS+qg3jMfxkkirFqUR2qXumLCi5GkTCuE3iQuT7ekpV\n4Hzn9jf/SmFV+5jJ7RNrmcAfpmAIYhcRA75bi1ytk7A/d9svQY0lPeC3PQKBgBaw\nF6ZhRSm02VWnJdx1QV2eLWcwsctc8kGQgnPaNhe5RhhNP1DiRiEObRZcYds+wFqk\nHgpegOIvD9GFmQUWExZVWm7ZgOOYhInsEDPaUets/07vsQCvl1065E6Z2usvaD7k\nZuEXgy8tbW4Q/+SqSNFbJXBYNtINJ0iBwxMwsvehAoGBAIwKcTXed5SlKiPxFwtF\nP9/yU+dq2HnUMusNI+Cnh80ICg8oFPDBoiK0Ij9KRLileFQWoD0RaHk2XIAVfbBz\nsRfkSJxv6X9hKdzPNuR7D2CdWhDNtwmNFUWwz/dvT4ityc4Kp26r/SpSbiXZCAwI\nrjop95RKR+whIxs+5Tu/El3r\n-----END PRIVATE KEY-----\n";
-// Substituir pela chave privada da sua conta de serviço
-
-// The ID of the spreadsheet where you'll publish the data
-// const char spreadsheetId[] = "1pkBYPdyPirv7kR87QNinugiXmNm_fmlBKPSBFLEbuG8";  // Substituir pelo ID da sua planilha do Google Sheets
-
-// Timer variables
 unsigned long lastTime = 0;
 unsigned long timerDelay = 500; // Intervalo de tempo em milissegundos entre os envios para a planilha (30 segundos)
 
-// Token Callback function
-// void tokenStatusCallback(TokenInfo info);  // Função de callback para lidar com informações do token de autenticação
-
 // NTP server to request epoch time
 const char *ntpServer = "time.google.com"; // Servidor NTP para obter o tempo em formato epoch
-const long gmtOffset_sec = -3 * 3600;  // -10800 segundos
-const int   daylightOffset_sec = 0;    // Offset para horário de verão, se necessário
-// String dateTime;  // Variável para armazenar a data e hora
-
-
-// Variable to save current epoch time
-unsigned long epochTime; // Variável para armazenar o tempo atual em formato epoch
+const long gmtOffset_sec = -3 * 3600;      // -10800 segundos
+const int daylightOffset_sec = 0;          // Offset para horário de verão, se necessário
+unsigned long epochTime;                   // Variável para armazenar o tempo atual em formato epoch
 
 unsigned long getTime()
 {
@@ -192,8 +133,6 @@ unsigned long getTime()
   return now; // Retorna o tempo atual em formato epoch
 }
 
-//<<sheets
-
 String info_data; // Informação sobre o usuario.Ex nome, cpf, etc.
 String id_data;   // Id para o usuario.
 int index_user_for_removal = -1;
@@ -201,12 +140,7 @@ int index_user_for_removal = -1;
 String rfid_card = ""; // Codigo RFID obtido pelo Leitor
 String sucess_msg = "";
 String failure_msg = "";
-
-// Cria um objeto  MFRC522.
-// MFRC522 mfrc522(SS_PIN, RST_PIN);
-// MFRC522 mfrc522(SDA_PIN, RST_PIN, MOSI_PIN, MISO_PIN, SCK_PIN);
 MFRC522 mfrc522(SDA_PIN, RST_PIN);
-
 // Cria um objeto AsyncWebServer que usará a porta 80
 AsyncWebServer server(80);
 
@@ -345,8 +279,6 @@ String processor(const String &var)
   return msg;
 }
 
-
-
 esp_now_peer_info_t peerInfo;
 
 void setup()
@@ -366,8 +298,6 @@ void setup()
     return;
   listAllFiles();
   readFile(FILENAME);
-
-  //  GSheet.printf("ESP Google Sheet Client v%s\n\n", ESP_GOOGLE_SHEET_CLIENT_VERSION);  // Imprime a versão da biblioteca utilizada //<<sheets
 
   // Conectando ao Wi-Fi
   WiFi.begin(ssid, password);
@@ -434,17 +364,6 @@ void setup()
     Serial.println("Falha ao adicionar o parceiro");
     return;
   }
-
-  // sheets
-  // Set the callback for Google API access token generation status (for debug only)
-  // GSheet.setTokenCallback(tokenStatusCallback);  // Define a função de callback para o status do token de autenticação
-
-  // Set the seconds to refresh the auth token before expire (60 to 3540, default is 300 seconds)
-  // GSheet.setPrerefreshSeconds(10 * 60);  // Define o intervalo para atualização do token de autenticação (10 minutos)
-
-  // Begin the access token generation for Google API authentication
-  // GSheet.begin(CLIENT_EMAIL, PROJECT_ID, PRIVATE_KEY);  // Inicia a geração do token de autenticação
-  // sheets
 
   // Rotas.
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -534,20 +453,19 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
   Serial.print(": ");
   Serial.println((char *)data);
 
-if (Firebase.ready() && signupOK) {
-   
-updateDateTime();  // Atualiza a variável dateTime 
-  Firebase.RTDB.pushString(&fbdo, "users/id", "uidTag");
-  Firebase.RTDB.pushString(&fbdo, "users/data", "01/05/2024 14:30:00");
-  // Firebase.RTDB.pushString(&fbdo, "users/email", "aleks.brandao@gmail.com");
-  Firebase.RTDB.pushString(&fbdo, "users/device", "CAM");
-    
-    }
-    else
-    {
-      Serial.println("FAILED");
-      Serial.println("REASON: " + fbdo.errorReason());
-    }
+  if (Firebase.ready() && signupOK)
+  {
+
+    updateDateTime(); // Atualiza a variável dateTime
+    Firebase.RTDB.pushString(&fbdo, "users/id", "uidTag");
+    Firebase.RTDB.pushString(&fbdo, "users/data", "01/05/2024 14:30:00");
+    Firebase.RTDB.pushString(&fbdo, "users/device", "CAM");
+  }
+  else
+  {
+    Serial.println("FAILED");
+    Serial.println("REASON: " + fbdo.errorReason());
+  }
 }
 
 void loop()
@@ -558,29 +476,6 @@ void loop()
     reconnect();
   }
   client.loop();
-
-  // Serial.println("LOOP");
-    // if (Firebase.ready() && signupOK && (millis() - sendDataPrevMillis > 15000 || sendDataPrevMillis == 0)) {
-    //   sendDataPrevMillis = millis();
-    //   // Firebase.RTDB.pushInt(&fbdo, "test/int", loopCount);
-    //   // loopCount++;
-    //   // Firebase.RTDB.pushFloat(&fbdo, "test/float", 0.01 + random(0, 100));
-    //   // Firebase.RTDB.pushString(&fbdo, "test/device", DEVICE_NAME);
-
-    //   Firebase.RTDB.pushString(&fbdo, "users/id", "id");
-    //   Firebase.RTDB.pushString(&fbdo, "users/data", "data");
-    //   // Firebase.RTDB.pushString(&fbdo, "users/email", "aleks.brandao@gmail.com");
-    //   // Firebase.RTDB.pushString(&fbdo, "users/entrys", DEVICE_NAME);
-    //   // Firebase.RTDB.pushString(&fbdo, "users/nome", "Aleks");
-    //   // Firebase.RTDB.pushString(&fbdo, "users/tipo", "A");
-    //   // Firebase.RTDB.pushString(&fbdo, "users/usuario", "Aleks");
-      
-    // }
-    // else
-    // {
-    //   Serial.println("FAILED");
-    //   Serial.println("REASON: " + fbdo.errorReason());
-    // }
 
   // Procure por novos cartões.
   if (!mfrc522.PICC_IsNewCardPresent())
@@ -594,8 +489,6 @@ void loop()
     String rfid_data = "";
     for (uint8_t i = 0; i < mfrc522.uid.size; i++)
     {
-      // Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-      // Serial.print(mfrc522.uid.uidByte[i], HEX);
       rfid_data.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
       rfid_data.concat(String(mfrc522.uid.uidByte[i], HEX));
     }
@@ -608,18 +501,10 @@ void loop()
     // Faça uma busca pelo id
     int user_index = findUser(users_data, rfid_data, "");
 
-    uidTag = rfid_data; // Utilize o valor da variável rfid_data como UID da tag
-                        // usuarioEncontrado = user_index < 0 ? "" : String(user_index);  // Utilize o valor da variável user_index como usuário encontrado, se for maior ou igual a zero; caso contrário, use uma string vazia
-                        //   usuarioEncontrado = users_data[user_index][1];
-                        // usuarioEncontrado.replace("<td>", ""); // Remove a tag inicial <td>
-    // usuarioEncontrado.replace("</td>", ""); // Remove a tag final </td>
-
+    uidTag = rfid_data;
     client.publish(mqtt_topic, rfid_card.c_str());
 
     Serial.println("uidTag = " + uidTag);
-    // Serial.println("usuarioEncontrado = " + usuarioEncontrado);
-
-    //   int user_index = findUser(users_data, id_data, info_data);
 
     if (user_index < 0)
     {
@@ -657,8 +542,6 @@ void loop()
       if (start >= 0 && end >= 0)
       {
         info_data = users_data[user_index].substring(start, end); // Extrair a informação entre as tags <td>
-                                                                  // Serial.println("Informação adicional:");
-                                                                  // Serial.println(info_data);
       }
       else
       {
@@ -668,41 +551,14 @@ void loop()
     delay(1000);
     digitalWrite(LED_GREEN, LOW);
     digitalWrite(LED_RED, LOW);
-    // Serial.println("SAINDO");
-    if (Firebase.ready() && signupOK) {
-    // if (Firebase.ready() && signupOK && (millis() - sendDataPrevMillis > 15000 || sendDataPrevMillis == 0)) {
-    //   sendDataPrevMillis = millis();
-      // Firebase.RTDB.pushInt(&fbdo, "test/int", loopCount);
-      // loopCount++;
-      // Firebase.RTDB.pushFloat(&fbdo, "test/float", 0.01 + random(0, 100));
-      // Firebase.RTDB.pushString(&fbdo, "test/device", DEVICE_NAME);
 
-        //         valueRange.set("values/[0]/[0]", epochTime);  // Define o valor de tempo na planilha
-  //         valueRange.set("values/[1]/[0]", String(uidTag));  // Define o número da tag na planilha
+    if (Firebase.ready() && signupOK)
+    {
 
-updateDateTime();  // Atualiza a variável dateTime 
-
+      updateDateTime(); // Atualiza a variável dateTime
       Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
       Firebase.RTDB.pushString(&fbdo, "users/data", "01/05/2024 14:30:00");
-      // // Firebase.RTDB.pushString(&fbdo, "users/email", "aleks.brandao@gmail.com");
       Firebase.RTDB.pushString(&fbdo, "users/device", "RFID");
-      // Firebase.RTDB.pushString(&fbdo, "users/nome", "Aleks");
-      // Firebase.RTDB.pushString(&fbdo, "users/tipo", "A");
-      // Firebase.RTDB.pushString(&fbdo, "users/usuario", "Aleks");
-
-  //       String message = String("start_recognition");                                                                      // Converte o UID para String
-  // esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
-  // if (result == ESP_OK)
-  // {
-  //   Serial.println("Mensagem ESPNOW enviada com sucesso");
-  // }
-  // else
-  // {
-  //   Serial.println("Erro ao enviar a mensagem");
-  // }
-
-
-      
     }
     else
     {
@@ -710,116 +566,19 @@ updateDateTime();  // Atualiza a variável dateTime
       Serial.println("REASON: " + fbdo.errorReason());
     }
   }
-
-  // sheets
-  //  Call ready() repeatedly in loop for authentication checking and processing
-  //  bool ready = GSheet.ready();  // Verifica se a autenticação com a API do Google Sheets está pronta
-
-  // if (ready && millis() - lastTime > timerDelay){
-  // lastTime = millis();  // Atualiza o tempo do último envio
-
-  // FirebaseJson response;
-
-  // Serial.println("\nAppend spreadsheet values...");
-  // Serial.println("----------------------------");
-
-  // FirebaseJson valueRange;
-
-  // New BME280 sensor readings
-  // temp = bme.readTemperature();  // Lê a temperatura
-  // hum = bme.readHumidity();  // Lê a umidade
-  // pres = bme.readPressure()/100.0F;  // Lê a pressão e converte para hPa
-  // Get timestamp
-  // epochTime = getTime();  // Obtém o tempo atual em formato epoch
-
-  // timeClient.update();
-
-  // Obtém a hora atual em formato Unix timestamp
-  // time_t now = timeClient.getEpochTime();
-
-  // Converte o timestamp para hora local
-  // struct tm *localTime = localtime(&now);
-
-  // Serial.print("Hora atual: ");
-  // Serial.println(timeClient.getFormattedTime());
-  // Serial.println(localTime);
-
-  //         char timeStr[20]; // Espaço para 20 caracteres, ajuste se necessário
-  // sprintf(timeStr, "%02d/%02d/%04d %02d:%02d:%02d",
-  //         localTime->tm_mday, localTime->tm_mon + 1, localTime->tm_year + 1900,
-  //         localTime->tm_hour, localTime->tm_min, localTime->tm_sec);
-
-  //         valueRange.add("majorDimension", "COLUMNS");
-  //         valueRange.set("values/[0]/[0]", epochTime);  // Define o valor de tempo na planilha
-  //         valueRange.set("values/[1]/[0]", String(uidTag));  // Define o número da tag na planilha
-  //         valueRange.set("values/[2]/[0]", String(info_data));  // Define o valor de nome na planilha
-  //         valueRange.set("values/[3]/[0]", timeClient.getFormattedTime());  // Define a hora na planilha
-
-  // valueRange.set("values/[4]/[0]", String(timeStr));  // Define o valor de pressão na planilha
-
-  // For Google Sheet API ref doc, go to https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/append
-  // Append values to the spreadsheet
-  // bool success = GSheet.values.append(&response /* returned response */, spreadsheetId /* spreadsheet Id to append */, "Sheet1!A1" /* range to append */, &valueRange /* data range to append */);
-  // if (success){
-  //     // response.toString(Serial, true);  // Imprime a resposta do envio na serial
-  //     valueRange.clear();
-  //     Serial.println("Dados enviados com sucesso para a planilha!");
-
-  // Enviar a mensagem
-  // const char* message = "Hello World";
-  // String message = String(uidTag);                                                                      // Converte o UID para String
-  // esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
-  // if (result == ESP_OK)
-  // {
-  //   Serial.println("Mensagem ESPNOW enviada com sucesso");
-  // }
-  // else
-  // {
-  //   Serial.println("Erro ao enviar a mensagem");
-  // }
-
-  //  }
-  // else{
-  // Serial.println(GSheet.errorReason());
-  // Serial.println("Erro ao enviar dados para a planilha!");
-  // }
-  // Serial.println();
-  // Serial.println(ESP.getFreeHeap());
-
-  // }
-  // }
-
-  // void tokenStatusCallback(TokenInfo info){
-  // if (info.status == token_status_error){
-  // GSheet.printf("Token info: type = %s, status = %s\n", GSheet.getTokenType(info).c_str(), GSheet.getTokenStatus(info).c_str());
-  // GSheet.printf("Token error: %s\n", GSheet.getTokenError(info).c_str());
-  // }
-  // else{
-  // GSheet.printf("Token info: type = %s, status = %s\n", GSheet.getTokenType(info).c_str(), GSheet.getTokenStatus(info).c_str());
-  // }
-  // sheets
-
-  //     // Enviar a mensagem
-  // const char* message = "Hello World";
-  // esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t*)message, strlen(message));
-  // if (result == ESP_OK) {
-  //   Serial.println("Mensagem ESPNOW enviada com sucesso");
-  // } else {
-  //   Serial.println("Erro ao enviar a mensagem");
-  // }
-
-  // delay(5000); // Espera 5 segundos antes de enviar novamente
 }
 
-void updateDateTime() {
+void updateDateTime()
+{
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
+  if (!getLocalTime(&timeinfo))
+  {
     Serial.println("Failed to obtain time");
-    dateTime = "Unavailable";  // Atribui um valor padrão se falhar
+    dateTime = "Unavailable"; // Atribui um valor padrão se falhar
     return;
   }
 
-  char buffer[30];  // Buffer para armazenar a data e hora formatadas
+  char buffer[30]; // Buffer para armazenar a data e hora formatadas
   strftime(buffer, sizeof(buffer), "%d/%m/%Y %H:%M:%S", &timeinfo);
-  dateTime = String(buffer);  // Converte para String e armazena
+  dateTime = String(buffer); // Converte para String e armazena
 }
