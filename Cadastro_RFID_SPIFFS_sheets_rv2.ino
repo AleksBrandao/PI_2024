@@ -2,9 +2,17 @@
 // https://blog.smartkits.com.br/esp8266-cadastro-rfid-mfrc522-com-webserver/
 // https://www.arduinoecia.com.br/controle-de-acesso-modulo-rfid-rc522/ = PINAGEM RDID
 // https://chat.openai.com/c/f2c64e55-cabb-4b43-9a30-00db7d6e8aa9 CHATGPT
+// https://randomnerdtutorials.com/install-esp32-filesystem-uploader-arduino-ide/
+// https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/
+// https://www.youtube.com/watch?v=MGPL10N9YmM ESP32-CAM - Controle de Acesso com Reconhecimento Facial e Jarvis - IeC119
+// https://robotzero.one/esp32-face-door-entry/
+// https://robotzero.one/arduino-ide-partitions/
+// https://gchq.github.io/CyberChef/
+// https://www.youtube.com/watch?v=bIJoVyjTf7g&t=30s
 
 // esp32 em 2.0.15
 // Firebase_ESP_Client em 2.3.7
+//placa ESP32 Dev Module
 
 #include <Arduino.h>
 #include <FS.h> //isso precisa ser o primeiro, ou tudo trava e queima...
@@ -27,13 +35,15 @@
 // Provide the RTDB payload printing info and other helper functions.
 #include "addons/RTDBHelper.h"
 // Definição do nome do dispositivo
-#define DEVICE_NAME "ESP32RFID"
+#define DEVICE_NAME "ESP32CAM"
 // Insert Firebase project API Key
 #define API_KEY "AIzaSyAJn68X4FRmxdk8NMu0ir9LwRsrIr7j7F0"
 // Insert RTDB URLefine the RTDB URL */
 #define DATABASE_URL "https://reconhecimento-facial-cbae7-default-rtdb.firebaseio.com"
 #define USER_EMAIL "aleks.brandao@gmail.com"
 #define USER_PASSWORD "reconhecimento"
+
+String usuarioEncontrado; // Variável global para armazenar o usuário encontrado
 
 // Define Firebase Data object
 FirebaseData fbdo;
@@ -48,8 +58,10 @@ bool signupOK = false;
 
 // esp 32-cam Endereço MAC: 24:DC:C3:AC:AD:FC
 // esp32 Endereço MAC: EC:64:C9:85:AE:B4
+// nova esp 32-cam Endereço MAC: 08:f9:e0:c6:a9:68
 // Estrutura para armazenar o endereço MAC do parceiro
-uint8_t partnerMacAddress[] = {0x24, 0xDC, 0xC3, 0xAC, 0xAD, 0xFC};
+//uint8_t partnerMacAddress[] = {0x08, 0xf9, 0xe0, 0xc6, 0xa9, 0x68};
+uint8_t partnerMacAddress[] = {0x24, 0xdc, 0xc3, 0xac, 0xad, 0xfc};
 
 #define FILENAME "/Cadastro.txt"
 #define LED_RED 15  // D3
@@ -279,6 +291,85 @@ String processor(const String &var)
   return msg;
 }
 
+// esp_now_peer_info_t peerInfo;
+
+void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
+{
+  Serial.print("Mensagem ESPNOW recebida de ");
+  Serial.print(DEVICE_NAME);
+  Serial.print(": ");
+  Serial.println(String((char*)data));
+
+  // Convertendo os dados recebidos para uma string para fácil manipulação
+  String input = String((char*)data);
+
+  // Encontrando a posição do ':'
+  int pos = input.indexOf(':');
+
+  if (pos != -1) {
+    // Separando a mensagem em "command" e "userID"
+    String command = input.substring(0, pos);
+    String userID = input.substring(pos + 1); // Pulando o ':' e o espaço
+//if (command != "Reconhecido") {
+//   Serial.print("Passou neste if");
+//    }
+    Serial.print("Command: ");
+    Serial.println(command);
+    Serial.print("UserID: ");
+    Serial.println(userID);
+    Serial.println(usuarioEncontrado);
+
+// Se você também deseja remover espaços internos
+userID.replace(" ", "");
+usuarioEncontrado.replace(" ", "");
+
+   if (userID == usuarioEncontrado) {
+    Serial.println("Verdadeiro");
+} else {
+    Serial.println("Falso");
+}
+    }
+
+    if (Firebase.ready() && signupOK) {
+    updateDateTime(); // Atualiza a variável dateTime
+    // Comentários removidos para limpeza do código
+    // Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
+    // Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
+    // Firebase.RTDB.pushString(&fbdo, "users/device", "RFID");
+
+    FirebaseJson json;
+    json.set("id", uidTag);
+    json.set("data", dateTime);
+    json.set("device", "CAM");
+
+    String path = "entrys/";
+    path += String(millis()); // Usando o timestamp como ID único
+
+    if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
+        Serial.println("Dados enviados com sucesso para Firebase!");
+    } else {
+        Serial.println("Falha no envio de dados: " + fbdo.errorReason());
+    }
+} else {
+    Serial.println("FAILED");
+    Serial.println("REASON: " + fbdo.errorReason());
+}
+
+
+//     if (Firebase.ready() && signupOK)
+//     {
+//       updateDateTime(); // Atualiza a variável dateTime
+//       Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
+//       Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
+//       Firebase.RTDB.pushString(&fbdo, "users/device", "CAM");
+//     }
+//     else
+//     {
+//       Serial.println("FAILED");
+//       Serial.println("REASON: " + fbdo.errorReason());
+//     }
+}
+
 esp_now_peer_info_t peerInfo;
 
 void setup()
@@ -364,6 +455,8 @@ void setup()
     Serial.println("Falha ao adicionar o parceiro");
     return;
   }
+  // Se chegou aqui, significa que o parceiro foi adicionado com sucesso.
+  Serial.println("Parceiro adicionado com sucesso!");
 
   // Rotas.
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -444,29 +537,9 @@ void setup()
 
 // Declare as variáveis globais fora de qualquer função
 // String uidTag;            // Variável global para armazenar o UID da tag
-String usuarioEncontrado; // Variável global para armazenar o usuário encontrado
+//String usuarioEncontrado; // Variável global para armazenar o usuário encontrado
 // Função de callback para processar mensagens recebidas
-void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
-{
-  Serial.print("Mensagem ESPNOW recebida de ");
-  Serial.print((char *)mac_addr);
-  Serial.print(": ");
-  Serial.println((char *)data);
 
-  if (Firebase.ready() && signupOK)
-  {
-
-    updateDateTime(); // Atualiza a variável dateTime
-    Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
-    Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
-    Firebase.RTDB.pushString(&fbdo, "users/device", "CAM");
-  }
-  else
-  {
-    Serial.println("FAILED");
-    Serial.println("REASON: " + fbdo.errorReason());
-  }
-}
 
 void loop()
 {
@@ -510,7 +583,12 @@ void loop()
     {
       Serial.printf("Nenhum usuário encontrado\n");
       digitalWrite(LED_RED, HIGH);
-      String message = String("start_detect");
+//      String message = String("start_enroll");
+       String command = "capture";
+       String userID = uidTag; // Substitua "123" pela string do ID do usuário real
+       String message = command + ":" + userID;
+       usuarioEncontrado = userID;
+
       esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
       if (result == ESP_OK)
       {
@@ -520,12 +598,17 @@ void loop()
       {
         Serial.println("Erro ao enviar a mensagem");
       }
+
     }
     else
     {
       Serial.printf("Usuário %d encontrado\n", user_index);
       digitalWrite(LED_GREEN, HIGH);
-      String message = String("start_recognition");
+//      String message = String("start_recognition");
+       String command = "start_recognition";
+       String userID = uidTag; // Substitua "123" pela string do ID do usuário real
+       String message = command + ":" + userID;
+
       esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
       if (result == ESP_OK)
       {
@@ -534,6 +617,7 @@ void loop()
       else
       {
         Serial.println("Erro ao enviar a mensagem");
+     
       }
 
       // Extrair a informação adicional do usuário
@@ -554,11 +638,25 @@ void loop()
 
     if (Firebase.ready() && signupOK)
     {
+        updateDateTime(); // Atualiza a variável dateTime
+//      Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
+//      Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
+//      Firebase.RTDB.pushString(&fbdo, "users/device", "RFID");
 
-      updateDateTime(); // Atualiza a variável dateTime
-      Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
-      Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
-      Firebase.RTDB.pushString(&fbdo, "users/device", "RFID");
+     FirebaseJson json;
+     json.set("id", uidTag);
+     json.set("data", dateTime);
+     json.set("device", "RFID");
+
+    String path = "entrys/";
+  path += String(millis()); // Usando o timestamp como ID único
+
+  if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
+    Serial.println("Dados enviados com sucesso para Firebase!");
+  } else {
+    Serial.println("Falha no envio de dados: " + fbdo.errorReason());
+  }
+      
     }
     else
     {
