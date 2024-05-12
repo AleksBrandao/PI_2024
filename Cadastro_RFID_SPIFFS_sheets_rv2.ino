@@ -44,6 +44,8 @@
 #define USER_PASSWORD "reconhecimento"
 
 String usuarioEncontrado; // Variável global para armazenar o usuário encontrado
+String usuarioCartao; // Variável global para armazenar o userID
+
 
 // Define Firebase Data object
 FirebaseData fbdo;
@@ -88,6 +90,17 @@ const char *password = "kPcsBo9tdC";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+String info_data; // Informação sobre o usuario.Ex nome, cpf, etc.
+String id_data;   // Id para o usuario.
+int index_user_for_removal = -1;
+
+String rfid_card = ""; // Codigo RFID obtido pelo Leitor
+String sucess_msg = "";
+String failure_msg = "";
+MFRC522 mfrc522(SDA_PIN, RST_PIN);
+// Cria um objeto AsyncWebServer que usará a porta 80
+AsyncWebServer server(80);
 
 // void callback(char *topic, byte *payload, unsigned int length)
 // {
@@ -145,16 +158,7 @@ unsigned long getTime()
   return now; // Retorna o tempo atual em formato epoch
 }
 
-String info_data; // Informação sobre o usuario.Ex nome, cpf, etc.
-String id_data;   // Id para o usuario.
-int index_user_for_removal = -1;
 
-String rfid_card = ""; // Codigo RFID obtido pelo Leitor
-String sucess_msg = "";
-String failure_msg = "";
-MFRC522 mfrc522(SDA_PIN, RST_PIN);
-// Cria um objeto AsyncWebServer que usará a porta 80
-AsyncWebServer server(80);
 
 void notFound(AsyncWebServerRequest *request)
 {
@@ -163,7 +167,7 @@ void notFound(AsyncWebServerRequest *request)
 // Inicializa o sistema de arquivos.
 bool initFS()
 {
-  if (!SPIFFS.begin())
+  if (!SPIFFS.begin(true))
   {
     Serial.println("Erro ao abrir o sistema de arquivos");
     return false;
@@ -174,6 +178,7 @@ bool initFS()
 // Lista todos os arquivos salvos na flash.
 void listAllFiles()
 {
+  Serial.println("###################### - inicio- ############################");
   String str = "";
   File root = SPIFFS.open("/");
   File file = root.openNextFile();
@@ -186,7 +191,9 @@ void listAllFiles()
     file = root.openNextFile();
   }
   Serial.print(str);
+  Serial.println("###################### - fim - ############################");
 }
+
 // Faça a leitura de um arquivo e retorne um vetor com todas as linhas.
 vector<String> readFile(String path)
 {
@@ -257,15 +264,27 @@ bool removeUser(int user_index)
     return false;
   }
   else
-  {
-    for (int i = 0; i < users_data.size(); i++)
-    {
-      if (i != user_index)
-        ;
-      myFile.println(users_data[i]);
-    }
-    Serial.println("Usuário removido");
+{
+  Serial.println("Iniciando remoção de usuário...");
+for (int i = 0; i < users_data.size(); i++) {
+  if (i == user_index) {
+    Serial.println("Usuário a ser removido: " + users_data[i]);
+  } else {
+    myFile.println(users_data[i]);
+    Serial.println("Escrevendo no arquivo: " + users_data[i]);
   }
+}
+}
+
+//  {
+//    for (int i = 0; i < users_data.size(); i++)
+//    {
+//      if (i != user_index)
+//        ;
+//      myFile.println(users_data[i]);
+//    }
+//    Serial.println("Usuário removido");
+//  }
   myFile.close();
   return true;
 }
@@ -309,51 +328,55 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
   if (pos != -1) {
     // Separando a mensagem em "command" e "userID"
     String command = input.substring(0, pos);
-    String userID = input.substring(pos + 1); // Pulando o ':' e o espaço
+    String usuarioEncontrado = input.substring(pos + 1); // Pulando o ':' e o espaço
 //if (command != "Reconhecido") {
 //   Serial.print("Passou neste if");
 //    }
     Serial.print("Command: ");
     Serial.println(command);
-    Serial.print("UserID: ");
-    Serial.println(userID);
+    Serial.print("usuarioEncontrado: ");
     Serial.println(usuarioEncontrado);
+    Serial.print("usuarioCartao: ");
+    Serial.println(usuarioCartao);
 
 // Se você também deseja remover espaços internos
-userID.replace(" ", "");
+usuarioCartao.replace(" ", "");
 usuarioEncontrado.replace(" ", "");
 
-   if (userID == usuarioEncontrado) {
+Serial.println(":" + usuarioCartao);
+Serial.println(":" + usuarioEncontrado);
+
+   if (usuarioCartao == usuarioEncontrado) {
     Serial.println("Verdadeiro");
 } else {
     Serial.println("Falso");
 }
     }
 
-    if (Firebase.ready() && signupOK) {
-    updateDateTime(); // Atualiza a variável dateTime
-    // Comentários removidos para limpeza do código
-    // Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
-    // Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
-    // Firebase.RTDB.pushString(&fbdo, "users/device", "RFID");
-
-    FirebaseJson json;
-    json.set("id", uidTag);
-    json.set("data", dateTime);
-    json.set("device", "CAM");
-
-    String path = "entrys/";
-    path += String(millis()); // Usando o timestamp como ID único
-
-    if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
-        Serial.println("Dados enviados com sucesso para Firebase!");
-    } else {
-        Serial.println("Falha no envio de dados: " + fbdo.errorReason());
-    }
-} else {
-    Serial.println("FAILED");
-    Serial.println("REASON: " + fbdo.errorReason());
-}
+//    if (Firebase.ready() && signupOK) {
+//    updateDateTime(); // Atualiza a variável dateTime
+//    // Comentários removidos para limpeza do código
+//    // Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
+//    // Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
+//    // Firebase.RTDB.pushString(&fbdo, "users/device", "RFID");
+//
+//    FirebaseJson json;
+//    json.set("id", uidTag);
+//    json.set("data", dateTime);
+//    json.set("device", "CAM");
+//
+//    String path = "entrys/";
+//    path += String(millis()); // Usando o timestamp como ID único
+//
+//    if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
+//        Serial.println("Dados enviados com sucesso para Firebase!");
+//    } else {
+//        Serial.println("Falha no envio de dados: " + fbdo.errorReason());
+//    }
+//} else {
+//    Serial.println("FAILED");
+//    Serial.println("REASON: " + fbdo.errorReason());
+//}
 
 
 //     if (Firebase.ready() && signupOK)
@@ -527,6 +550,18 @@ void setup()
   server.on("/logo.jpg", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(SPIFFS, "/logo.jpg", "image/jpg"); });
 
+            server.on("/download", HTTP_GET, [](AsyncWebServerRequest *request) {
+  // Verifica se o arquivo existe
+  if (SPIFFS.exists(FILENAME)) {
+    // Envia o arquivo como um download
+    request->send(SPIFFS, FILENAME, "text/plain", true);
+  } else {
+    // Se o arquivo não existir, envia uma resposta de erro 404
+    request->send(404, "text/plain", "File Not Found");
+  }
+});
+
+
   server.onNotFound(notFound);
   // Inicia o serviço
   server.begin();
@@ -587,7 +622,7 @@ void loop()
        String command = "capture";
        String userID = uidTag; // Substitua "123" pela string do ID do usuário real
        String message = command + ":" + userID;
-       usuarioEncontrado = userID;
+       usuarioCartao = userID;
 
       esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
       if (result == ESP_OK)
@@ -608,6 +643,7 @@ void loop()
        String command = "start_recognition";
        String userID = uidTag; // Substitua "123" pela string do ID do usuário real
        String message = command + ":" + userID;
+       usuarioCartao = userID;
 
       esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
       if (result == ESP_OK)
@@ -621,16 +657,16 @@ void loop()
       }
 
       // Extrair a informação adicional do usuário
-      int start = users_data[user_index].indexOf("<td>") + 25;  // Índice do início das informações
-      int end = users_data[user_index].indexOf("</td>", start); // Índice do final das informações
-      if (start >= 0 && end >= 0)
-      {
-        info_data = users_data[user_index].substring(start, end); // Extrair a informação entre as tags <td>
-      }
-      else
-      {
-        Serial.println("Erro ao extrair informação adicional do usuário");
-      }
+      // int start = users_data[user_index].indexOf("<td>") + 25;  // Índice do início das informações
+      // int end = users_data[user_index].indexOf("</td>", start); // Índice do final das informações
+      // if (start >= 0 && end >= 0)
+      // {
+      //   info_data = users_data[user_index].substring(start, end); // Extrair a informação entre as tags <td>
+      // }
+      // else
+      // {
+      //   Serial.println("Erro ao extrair informação adicional do usuário");
+      // }
     }
     delay(1000);
     digitalWrite(LED_GREEN, LOW);
