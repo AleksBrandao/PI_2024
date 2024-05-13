@@ -1,19 +1,10 @@
 
-// https://blog.smartkits.com.br/esp8266-cadastro-rfid-mfrc522-com-webserver/
-// https://www.arduinoecia.com.br/controle-de-acesso-modulo-rfid-rc522/ = PINAGEM RDID
-// https://chat.openai.com/c/f2c64e55-cabb-4b43-9a30-00db7d6e8aa9 CHATGPT
-// https://randomnerdtutorials.com/install-esp32-filesystem-uploader-arduino-ide/
-// https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/
-// https://www.youtube.com/watch?v=MGPL10N9YmM ESP32-CAM - Controle de Acesso com Reconhecimento Facial e Jarvis - IeC119
-// https://robotzero.one/esp32-face-door-entry/
-// https://robotzero.one/arduino-ide-partitions/
-// https://gchq.github.io/CyberChef/
-// https://www.youtube.com/watch?v=bIJoVyjTf7g&t=30s
 
 // esp32 em 2.0.15
 // Firebase_ESP_Client em 2.3.7
 //placa ESP32 Dev Module
 
+#include "config.h"
 #include <Arduino.h>
 #include <FS.h> //isso precisa ser o primeiro, ou tudo trava e queima...
 #include "SPIFFS.h"
@@ -46,7 +37,6 @@
 String usuarioEncontrado; // Variável global para armazenar o usuário encontrado
 String usuarioCartao; // Variável global para armazenar o userID
 
-
 // Define Firebase Data object
 FirebaseData fbdo;
 String uidTag;
@@ -58,18 +48,6 @@ unsigned long sendDataPrevMillis = 0;
 int loopCount = 0;
 bool signupOK = false;
 
-// esp 32-cam Endereço MAC: 24:DC:C3:AC:AD:FC
-// esp32 Endereço MAC: EC:64:C9:85:AE:B4
-// nova esp 32-cam Endereço MAC: 08:f9:e0:c6:a9:68
-// Estrutura para armazenar o endereço MAC do parceiro
-
-//uint8_t partnerMacAddress[] = {0x08, 0xf9, 0xe0, 0xc6, 0xa9, 0x68};
-uint8_t partnerMacAddress[] = {0x24, 0xdc, 0xc3, 0xac, 0xad, 0xfc};
-
-//ESP01 MAC: 8c:aa:b5:7c:16:62
-uint8_t partnerMacAddress_ESP01[] = {0x8c, 0xaa, 0xb5, 0x7c, 0x16, 0x62};
-
-
 #define FILENAME "/Cadastro.txt"
 #define LED_RED 15  // D3
 #define LED_GREEN 2 // D4
@@ -80,26 +58,6 @@ uint8_t partnerMacAddress_ESP01[] = {0x8c, 0xaa, 0xb5, 0x7c, 0x16, 0x62};
 #define RST_PIN 5   //
 
 using namespace std;
-
-// IPAddress local_IP(10, 0, 0, 254);
-// IPAddress gateway(10, 0, 0, 1);
-//
-IPAddress local_IP(192, 168, 15, 254);
-IPAddress gateway(192, 168, 15, 1);
-IPAddress subnet(255, 255, 0, 0);
-
-
-const char *ssid = "VIVOFIBRA-5221";
-const char *password = "kPcsBo9tdC";
-
-// const char *ssid = "INTELBRAS";
-// const char *password = "Anaenena";
-
-// #define USER_EMAIL "aleks.brandao@gmail.com"
-// #define USER_PASSWORD "reconhecimento"
-// const char *mqtt_server = "broker.emqx.io";
-// const int mqtt_port = 1883;
-// const char *mqtt_topic = "joystickData";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -114,38 +72,6 @@ String failure_msg = "";
 MFRC522 mfrc522(SDA_PIN, RST_PIN);
 // Cria um objeto AsyncWebServer que usará a porta 80
 AsyncWebServer server(80);
-
-// void callback(char *topic, byte *payload, unsigned int length)
-// {
-//   Serial.print("Mensagem recebida [");
-//   Serial.print(topic);
-//   Serial.print("] ");
-//   for (int i = 0; i < length; i++)
-//   {
-//     Serial.print((char)payload[i]);
-//   }
-//   Serial.println();
-// }
-
-// void reconnect()
-// {
-//   while (!client.connected())
-//   {
-//     // Serial.println("Tentando se reconectar ao MQTT Broker...");
-//     if (client.connect("ESP32Client"))
-//     {
-//       // Serial.println("Conectado");
-//       client.subscribe(mqtt_topic);
-//     }
-//     else
-//     {
-//       // Serial.print("Falha na conexão, rc=");
-//       // Serial.print(client.state());
-//       // Serial.println(" Tentando novamente em 5 segundos");
-//       // delay(5000);
-//     }
-//   }
-// }
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org");
@@ -170,7 +96,6 @@ unsigned long getTime()
   time(&now);
   return now; // Retorna o tempo atual em formato epoch
 }
-
 
 
 void notFound(AsyncWebServerRequest *request)
@@ -289,15 +214,7 @@ for (int i = 0; i < users_data.size(); i++) {
 }
 }
 
-//  {
-//    for (int i = 0; i < users_data.size(); i++)
-//    {
-//      if (i != user_index)
-//        ;
-//      myFile.println(users_data[i]);
-//    }
-//    Serial.println("Usuário removido");
-//  }
+
   myFile.close();
   return true;
 }
@@ -386,45 +303,6 @@ usuarioEncontrado.replace(" ", "");
     Serial.println("Usuário não reconhecido");
 }
     }
-
-//    if (Firebase.ready() && signupOK) {
-//    updateDateTime(); // Atualiza a variável dateTime
-//    // Comentários removidos para limpeza do código
-//    // Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
-//    // Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
-//    // Firebase.RTDB.pushString(&fbdo, "users/device", "RFID");
-//
-//    FirebaseJson json;
-//    json.set("id", uidTag);
-//    json.set("data", dateTime);
-//    json.set("device", "CAM");
-//
-//    String path = "entrys/";
-//    path += String(millis()); // Usando o timestamp como ID único
-//
-//    if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
-//        Serial.println("Dados enviados com sucesso para Firebase!");
-//    } else {
-//        Serial.println("Falha no envio de dados: " + fbdo.errorReason());
-//    }
-//} else {
-//    Serial.println("FAILED");
-//    Serial.println("REASON: " + fbdo.errorReason());
-//}
-
-
-//     if (Firebase.ready() && signupOK)
-//     {
-//       updateDateTime(); // Atualiza a variável dateTime
-//       Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
-//       Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
-//       Firebase.RTDB.pushString(&fbdo, "users/device", "CAM");
-//     }
-//     else
-//     {
-//       Serial.println("FAILED");
-//       Serial.println("REASON: " + fbdo.errorReason());
-//     }
 }
 
 esp_now_peer_info_t peerInfo;
@@ -537,15 +415,6 @@ void setup()
   // Se chegou aqui, significa que o parceiro foi adicionado com sucesso.
   Serial.println("Segundo parceiro (ESP-01) adicionado com sucesso!");
 
-//     // Configuração e adição do segundo parceiro (ESP-01)
-//    memcpy(peerInfo.peer_addr, partnerMacAddress_ESP01, 6);
-//    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-//        Serial.println("Falha ao adicionar o segundo parceiro (ESP-01)");
-//    } else {
-//        Serial.println("Segundo parceiro (ESP-01) adicionado com sucesso!");
-//    }
-//}
-
   // Rotas.
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             {
@@ -635,12 +504,6 @@ void setup()
   configTime(0, 0, ntpServer); // Configura o tempo utilizando o servidor NTP //<<sheets
 }
 
-// Declare as variáveis globais fora de qualquer função
-// String uidTag;            // Variável global para armazenar o UID da tag
-//String usuarioEncontrado; // Variável global para armazenar o usuário encontrado
-// Função de callback para processar mensagens recebidas
-
-
 void loop()
 {
 
@@ -683,7 +546,7 @@ void loop()
     {
       Serial.printf("Nenhum usuário encontrado\n");
       digitalWrite(LED_RED, HIGH);
-//      String message = String("start_enroll");
+
        String command = "capture";
        String userID = uidTag; // Substitua "123" pela string do ID do usuário real
        String message = command + ":" + userID;
@@ -704,7 +567,7 @@ void loop()
     {
       Serial.printf("Usuário %d encontrado\n", user_index);
       digitalWrite(LED_GREEN, HIGH);
-//      String message = String("start_recognition");
+
        String command = "start_recognition";
        String userID = uidTag; // Substitua "123" pela string do ID do usuário real
        String message = command + ":" + userID;
@@ -721,17 +584,6 @@ void loop()
      
       }
 
-      // Extrair a informação adicional do usuário
-      // int start = users_data[user_index].indexOf("<td>") + 25;  // Índice do início das informações
-      // int end = users_data[user_index].indexOf("</td>", start); // Índice do final das informações
-      // if (start >= 0 && end >= 0)
-      // {
-      //   info_data = users_data[user_index].substring(start, end); // Extrair a informação entre as tags <td>
-      // }
-      // else
-      // {
-      //   Serial.println("Erro ao extrair informação adicional do usuário");
-      // }
     }
     delay(1000);
     digitalWrite(LED_GREEN, LOW);
@@ -740,9 +592,6 @@ void loop()
     if (Firebase.ready() && signupOK)
     {
         updateDateTime(); // Atualiza a variável dateTime
-//      Firebase.RTDB.pushString(&fbdo, "users/id", uidTag);
-//      Firebase.RTDB.pushString(&fbdo, "users/data", dateTime);
-//      Firebase.RTDB.pushString(&fbdo, "users/device", "RFID");
 
      FirebaseJson json;
      json.set("id", uidTag);
