@@ -62,8 +62,13 @@ bool signupOK = false;
 // esp32 Endereço MAC: EC:64:C9:85:AE:B4
 // nova esp 32-cam Endereço MAC: 08:f9:e0:c6:a9:68
 // Estrutura para armazenar o endereço MAC do parceiro
+
 //uint8_t partnerMacAddress[] = {0x08, 0xf9, 0xe0, 0xc6, 0xa9, 0x68};
 uint8_t partnerMacAddress[] = {0x24, 0xdc, 0xc3, 0xac, 0xad, 0xfc};
+
+//ESP01 MAC: 8c:aa:b5:7c:16:62
+uint8_t partnerMacAddress_ESP01[] = {0x8c, 0xaa, 0xb5, 0x7c, 0x16, 0x62};
+
 
 #define FILENAME "/Cadastro.txt"
 #define LED_RED 15  // D3
@@ -75,6 +80,14 @@ uint8_t partnerMacAddress[] = {0x24, 0xdc, 0xc3, 0xac, 0xad, 0xfc};
 #define RST_PIN 5   //
 
 using namespace std;
+
+// IPAddress local_IP(10, 0, 0, 254);
+// IPAddress gateway(10, 0, 0, 1);
+//
+IPAddress local_IP(192, 168, 15, 254);
+IPAddress gateway(192, 168, 15, 1);
+IPAddress subnet(255, 255, 0, 0);
+
 
 const char *ssid = "VIVOFIBRA-5221";
 const char *password = "kPcsBo9tdC";
@@ -205,14 +218,14 @@ vector<String> readFile(String path)
     myFile.close();
     return {};
   }
-  Serial.println("###################### - FILE- ############################");
+//  Serial.println("###################### - FILE- ############################");
   while (myFile.available())
   {
     content = myFile.readStringUntil('\n');
     file_lines.push_back(content);
-    Serial.println(content);
+//    Serial.println(content);
   }
-  Serial.println("###########################################################");
+//  Serial.println("###########################################################");
   myFile.close();
   return file_lines;
 }
@@ -311,6 +324,14 @@ String processor(const String &var)
 }
 
 // esp_now_peer_info_t peerInfo;
+ void sendEspNowCommand(const char* command) {
+    esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t*)command, strlen(command) + 1);
+    if (result == ESP_OK) {
+        Serial.println("Confirmação de mensagem enviada com sucesso.");
+    } else {
+        Serial.println("Falha ao enviar mensagem de confirmação.");
+    }
+}
 
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 {
@@ -318,13 +339,15 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
   Serial.print(DEVICE_NAME);
   Serial.print(": ");
   Serial.println(String((char*)data));
+  sendEspNowCommand("Confirmação que a mensagem foi recebida");
+
 
   // Convertendo os dados recebidos para uma string para fácil manipulação
   String input = String((char*)data);
-
+delay(100);
   // Encontrando a posição do ':'
   int pos = input.indexOf(':');
-
+delay(100);
   if (pos != -1) {
     // Separando a mensagem em "command" e "userID"
     String command = input.substring(0, pos);
@@ -334,22 +357,33 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 //    }
     Serial.print("Command: ");
     Serial.println(command);
-    Serial.print("usuarioEncontrado: ");
+    Serial.print("Usuario reconhecido: ");
     Serial.println(usuarioEncontrado);
-    Serial.print("usuarioCartao: ");
+    Serial.print("Usuario recebido da ESP32: ");
     Serial.println(usuarioCartao);
 
 // Se você também deseja remover espaços internos
 usuarioCartao.replace(" ", "");
 usuarioEncontrado.replace(" ", "");
 
-Serial.println(":" + usuarioCartao);
-Serial.println(":" + usuarioEncontrado);
+//Serial.println(":" + usuarioCartao);
+//Serial.println(":" + usuarioEncontrado);
 
    if (usuarioCartao == usuarioEncontrado) {
-    Serial.println("Verdadeiro");
+    Serial.println("Usuário reconhecido corresponde ao registrado");
+    const char* message = "open";
+    esp_err_t result = esp_now_send(partnerMacAddress_ESP01, (uint8_t *)message, strlen(message) + 1); // Envia a mensagem para abrir a fechadura
+
+    if (result == ESP_OK)
+      {
+        Serial.println("Mensagem para ESP01 enviada com sucesso");
+      }
+      else
+      {
+        Serial.println("Erro ao enviar a mensagem para ESP01");
+      }
 } else {
-    Serial.println("Falso");
+    Serial.println("Usuário não reconhecido");
 }
     }
 
@@ -414,16 +448,29 @@ void setup()
   readFile(FILENAME);
 
   // Conectando ao Wi-Fi
+//  WiFi.begin(ssid, password);
+//  while (WiFi.status() != WL_CONNECTED)
+//  {
+//    delay(1000);
+//    Serial.println("Conectando WiFi..");
+//    // Configura o fuso horário (GMT-3:00 para São Paulo, Brasil)
+//    //  setTimeOffset(-3 * 3600);
+//    timeClient.begin();
+//  }
+
+ if (!WiFi.config(local_IP, gateway, subnet))
+  {
+    Serial.println("STA Failed to configure");
+  }
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED)
   {
-    delay(1000);
-    Serial.println("Conectando WiFi..");
-    // Configura o fuso horário (GMT-3:00 para São Paulo, Brasil)
-    //  setTimeOffset(-3 * 3600);
-    timeClient.begin();
+    delay(500);
+    Serial.print(".");
   }
-
+  Serial.println("");
+  Serial.println("WiFi connected");
+  
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
   Serial.println(WiFi.localIP());
@@ -475,11 +522,29 @@ void setup()
 
   if (esp_now_add_peer(&peerInfo) != ESP_OK)
   {
-    Serial.println("Falha ao adicionar o parceiro");
+    Serial.println("Falha ao adicionar o primeiro parceiro");
     return;
   }
   // Se chegou aqui, significa que o parceiro foi adicionado com sucesso.
-  Serial.println("Parceiro adicionado com sucesso!");
+  Serial.println("Primeiro parceiro adicionado com sucesso!");
+
+   memcpy(peerInfo.peer_addr, partnerMacAddress_ESP01, 6);
+  if (esp_now_add_peer(&peerInfo) != ESP_OK)
+  {
+    Serial.println("Falha ao adicionar o segundo parceiro (ESP-01)");
+    return;
+  }
+  // Se chegou aqui, significa que o parceiro foi adicionado com sucesso.
+  Serial.println("Segundo parceiro (ESP-01) adicionado com sucesso!");
+
+//     // Configuração e adição do segundo parceiro (ESP-01)
+//    memcpy(peerInfo.peer_addr, partnerMacAddress_ESP01, 6);
+//    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+//        Serial.println("Falha ao adicionar o segundo parceiro (ESP-01)");
+//    } else {
+//        Serial.println("Segundo parceiro (ESP-01) adicionado com sucesso!");
+//    }
+//}
 
   // Rotas.
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -593,7 +658,7 @@ void loop()
   // Faça a leitura do ID do cartão
   if (mfrc522.PICC_ReadCardSerial())
   {
-    Serial.print("UID da tag :");
+//    Serial.print("UID da tag :");
     String rfid_data = "";
     for (uint8_t i = 0; i < mfrc522.uid.size; i++)
     {
