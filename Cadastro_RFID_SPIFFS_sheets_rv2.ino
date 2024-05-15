@@ -27,12 +27,6 @@
 #include "addons/RTDBHelper.h"
 // Definição do nome do dispositivo
 #define DEVICE_NAME "ESP32CAM"
-// Insert Firebase project API Key
-#define API_KEY "AIzaSyAJn68X4FRmxdk8NMu0ir9LwRsrIr7j7F0"
-// Insert RTDB URLefine the RTDB URL */
-#define DATABASE_URL "https://reconhecimento-facial-cbae7-default-rtdb.firebaseio.com"
-#define USER_EMAIL "aleks.brandao@gmail.com"
-#define USER_PASSWORD "reconhecimento"
 
 String usuarioEncontrado; // Variável global para armazenar o usuário encontrado
 String usuarioCartao; // Variável global para armazenar o userID
@@ -49,6 +43,7 @@ int loopCount = 0;
 bool signupOK = false;
 
 #define FILENAME "/Cadastro.txt"
+#define RELAY_PIN 22
 #define LED_RED 15  // D3
 #define LED_GREEN 2 // D4
 #define SDA_PIN 21  // ok
@@ -79,7 +74,7 @@ unsigned long lastTime = 0;
 unsigned long timerDelay = 500; // Intervalo de tempo em milissegundos entre os envios para a planilha (30 segundos)
 
 // NTP server to request epoch time
-const char *ntpServer = "time.google.com"; // Servidor NTP para obter o tempo em formato epoch
+const char *ntpServer = "pool.ntp.org"; // Servidor NTP para obter o tempo em formato epoch
 const long gmtOffset_sec = -3 * 3600;      // -10800 segundos
 const int daylightOffset_sec = 0;          // Offset para horário de verão, se necessário
 unsigned long epochTime;                   // Variável para armazenar o tempo atual em formato epoch
@@ -90,7 +85,7 @@ unsigned long getTime()
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo))
   {
-    // Serial.println("Failed to obtain time");
+     Serial.println("Failed to obtain time");
     return (0);
   }
   time(&now);
@@ -261,10 +256,10 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 
   // Convertendo os dados recebidos para uma string para fácil manipulação
   String input = String((char*)data);
-delay(100);
+//delay(100);
   // Encontrando a posição do ':'
   int pos = input.indexOf(':');
-delay(100);
+//delay(100);
   if (pos != -1) {
     // Separando a mensagem em "command" e "userID"
     String command = input.substring(0, pos);
@@ -287,7 +282,10 @@ usuarioEncontrado.replace(" ", "");
 //Serial.println(":" + usuarioEncontrado);
 
    if (usuarioCartao == usuarioEncontrado) {
-    Serial.println("Usuário reconhecido corresponde ao registrado");
+      Serial.println("Usuário reconhecido corresponde ao registrado");
+    digitalWrite(RELAY_PIN, HIGH);  // Ativa o relé
+    delay(5000);                    // Mantém a trava aberta por 5 segundos
+    digitalWrite(RELAY_PIN, LOW);   // Desativa o relé
     const char* message = "open";
     esp_err_t result = esp_now_send(partnerMacAddress_ESP01, (uint8_t *)message, strlen(message) + 1); // Envia a mensagem para abrir a fechadura
 
@@ -315,7 +313,8 @@ void setup()
   pinMode(LED_RED, OUTPUT);
   digitalWrite(LED_GREEN, LOW);
   digitalWrite(LED_RED, LOW);
-
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);  // Inicia o relé desligado
   SPI.begin();
   mfrc522.PCD_Init(); // Inicia MFRC522
 
@@ -521,6 +520,11 @@ void loop()
   // Faça a leitura do ID do cartão
   if (mfrc522.PICC_ReadCardSerial())
   {
+
+    digitalWrite(RELAY_PIN, HIGH);  // Ativa o relé
+    delay(5000);                    // Mantém a trava aberta por 5 segundos
+    digitalWrite(RELAY_PIN, LOW);   // Desativa o relé
+      
 //    Serial.print("UID da tag :");
     String rfid_data = "";
     for (uint8_t i = 0; i < mfrc522.uid.size; i++)
@@ -545,7 +549,7 @@ void loop()
     if (user_index < 0)
     {
       Serial.printf("Nenhum usuário encontrado\n");
-      digitalWrite(LED_RED, HIGH);
+//      digitalWrite(LED_RED, HIGH);
 
        String command = "capture";
        String userID = uidTag; // Substitua "123" pela string do ID do usuário real
@@ -566,7 +570,7 @@ void loop()
     else
     {
       Serial.printf("Usuário %d encontrado\n", user_index);
-      digitalWrite(LED_GREEN, HIGH);
+//      digitalWrite(LED_GREEN, HIGH);
 
        String command = "start_recognition";
        String userID = uidTag; // Substitua "123" pela string do ID do usuário real
@@ -585,9 +589,9 @@ void loop()
       }
 
     }
-    delay(1000);
-    digitalWrite(LED_GREEN, LOW);
-    digitalWrite(LED_RED, LOW);
+//    delay(1000);
+//    digitalWrite(LED_GREEN, LOW);
+//    digitalWrite(LED_RED, LOW);
 
     if (Firebase.ready() && signupOK)
     {
