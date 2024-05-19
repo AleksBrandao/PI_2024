@@ -26,8 +26,7 @@
                 <label>Aproxime sua tag do leitor</label><br>
                 <input class="inputs" type="text" name="rfid" id="rfid-tag" value=%RFID_TAG%><br>
                 <label>Informação adicional</label><br>
-                <input class="inputs" type="text" name="info" required="required" placeholder="Nome"><br>
-                
+                <input class="inputs" type="text" name="info" required="required" placeholder="Ex: Nome, CPF"><br>
                 <input type="submit" class="button" value="Cadastrar">
             </form>
         </div>
@@ -36,16 +35,10 @@
             <h1>Usuários cadastrados</h1>
             %TABLE%
         </div>
-       
+        <div>
+            <iframe id="remote-cam" src="http://10.0.0.253" style="width: 100%; height: 300px; border: none;"></iframe>
+        </div>
     </div>
-
-    <div id="remote-cam-container">
-        <iframe id="remote-cam" src="http://10.0.0.253"></iframe>
-    </div>
-    
-    <footer>
-        <h4>2024. UNIVESP - Universidade Virtual do Estado de São Paulo.</h4>
-      </footer>
 </body>
 <script>
     setInterval(function () {
