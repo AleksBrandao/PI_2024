@@ -2,17 +2,23 @@
 <html>
 
 <head>
-    <title>Pagina de cadastro</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" href="logo.jpg">
+    <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, shrink-to-fit=no">
+  <title>UNIVESP - Controle de Acesso</title>
+    <link rel="icon" href="logo-univesp.png">
     <link rel="stylesheet" href="stylesheet.css">
 </head>
 
 <body>
-    <div id="logo-div">
-        <img src="logo.jpg" alt="logo">
-    </div>
+
+    <header>
+        <img class="logo" src="logo-univesp.png" title="UNIVESP">
+        <h1>Controle de Acesso - Reconhecimento Facial</h1>
+      </header>
+
+    <!-- <div id="logo-div">
+        <img src="logo-univesp.png" alt="logo">
+    </div> -->
     <div id="container">
         <div id="form-div">
             <h1>Novo usuário</h1>
@@ -20,7 +26,8 @@
                 <label>Aproxime sua tag do leitor</label><br>
                 <input class="inputs" type="text" name="rfid" id="rfid-tag" value=%RFID_TAG%><br>
                 <label>Informação adicional</label><br>
-                <input class="inputs" type="text" name="info" required="required" placeholder="Ex: Nome, CPF"><br>
+                <input class="inputs" type="text" name="info" required="required" placeholder="Nome"><br>
+                
                 <input type="submit" class="button" value="Cadastrar">
             </form>
         </div>
@@ -29,7 +36,16 @@
             <h1>Usuários cadastrados</h1>
             %TABLE%
         </div>
+       
     </div>
+
+    <div id="remote-cam-container">
+        <iframe id="remote-cam" src="http://10.0.0.253"></iframe>
+    </div>
+    
+    <footer>
+        <h4>2024. UNIVESP - Universidade Virtual do Estado de São Paulo.</h4>
+      </footer>
 </body>
 <script>
     setInterval(function () {

@@ -1,5 +1,4 @@
 
-
 // esp32 em 2.0.15
 // Firebase_ESP_Client em 2.3.7
 //placa ESP32 Dev Module
@@ -27,20 +26,36 @@
 #include "addons/RTDBHelper.h"
 // Definição do nome do dispositivo
 #define DEVICE_NAME "ESP32CAM"
+//// Insert Firebase project API Key
+
+#define API_KEY "AIzaSyCY8rX0e_eJ_RMWu-pHHFIdxbkwf4enwcM"
+
+#define DATABASE_URL "https://projeto-integrador-2024-655e5-default-rtdb.firebaseio.com"
+#define USER_EMAIL "aleks.brandao@gmail.com"
+#define USER_PASSWORD "Togomae123"
 
 String usuarioEncontrado; // Variável global para armazenar o usuário encontrado
 String usuarioCartao; // Variável global para armazenar o userID
 
 // Define Firebase Data object
 FirebaseData fbdo;
-String uidTag;
-String dateTime; // Altere para String em vez de const char*
 FirebaseAuth auth;
 FirebaseConfig config;
+
+String uidTag;
+String dateTime; // Altere para String em vez de const char*
+
+// Variável global para controlar a execução no loop
+int executeAction = 0;
 
 unsigned long sendDataPrevMillis = 0;
 int loopCount = 0;
 bool signupOK = false;
+
+uint8_t partnerMacAddress[] = {0x24, 0xdc, 0xc3, 0xac, 0xad, 0xfc};
+
+uint8_t partnerMacAddress_ESP01[] = {0xf4, 0xcf, 0xa2, 0xc3, 0x7e, 0x75};
+
 
 #define FILENAME "/Cadastro.txt"
 #define RELAY_PIN 22
@@ -53,6 +68,13 @@ bool signupOK = false;
 #define RST_PIN 5   //
 
 using namespace std;
+
+ IPAddress local_IP(10, 0, 0, 254);
+ IPAddress gateway(10, 0, 0, 1);
+IPAddress subnet(255, 255, 0, 0);
+
+ const char *ssid = "INTELBRAS";
+ const char *password = "Anaenena";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -69,7 +91,7 @@ MFRC522 mfrc522(SDA_PIN, RST_PIN);
 AsyncWebServer server(80);
 
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org");
+NTPClient timeClient(ntpUDP, "pool.ntp.org", -3 * 3600, 60000);  // Ajuste o fuso horário como -3 horas, 60000 é o intervalo de atualização em milissegundos
 unsigned long lastTime = 0;
 unsigned long timerDelay = 500; // Intervalo de tempo em milissegundos entre os envios para a planilha (30 segundos)
 
@@ -209,7 +231,6 @@ for (int i = 0; i < users_data.size(); i++) {
 }
 }
 
-
   myFile.close();
   return true;
 }
@@ -219,7 +240,7 @@ String processor(const String &var)
   String msg = "";
   if (var == "TABLE")
   {
-    msg = "<table><tr><td>RFID Code</td><td>User Info</td><td>Delete</td></tr>";
+    msg = "<table><tr><td>Código RFID</td><td>Nome</td><td>Delete</td></tr>";
     vector<String> lines = readFile(FILENAME);
     for (int i = 0; i < lines.size(); i++)
     {
@@ -247,11 +268,29 @@ String processor(const String &var)
 
 void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 {
+
+    bool  status = false; // Inicializa a variável de status com 0
+
+    /* Assign the api key (required) */
+  config.api_key = API_KEY;
+
+  /* Assign the RTDB URL (required) */
+  config.database_url = DATABASE_URL;
+
+  // auth.user.email = USER_EMAIL;
+  // auth.user.password = USER_PASSWORD;
+
+ /* Assign the callback function for the long running token generation task */
+  config.token_status_callback = tokenStatusCallback; // see addons/TokenHelper.h
+
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
+   
   Serial.print("Mensagem ESPNOW recebida de ");
   Serial.print(DEVICE_NAME);
   Serial.print(": ");
   Serial.println(String((char*)data));
-  sendEspNowCommand("Confirmação que a mensagem foi recebida");
+  sendEspNowCommand("Confirmação que a mensagem foi recebida pela ESP32");
 
 
   // Convertendo os dados recebidos para uma string para fácil manipulação
@@ -264,9 +303,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
     // Separando a mensagem em "command" e "userID"
     String command = input.substring(0, pos);
     String usuarioEncontrado = input.substring(pos + 1); // Pulando o ':' e o espaço
-//if (command != "Reconhecido") {
-//   Serial.print("Passou neste if");
-//    }
+
     Serial.print("Command: ");
     Serial.println(command);
     Serial.print("Usuario reconhecido: ");
@@ -278,29 +315,29 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 usuarioCartao.replace(" ", "");
 usuarioEncontrado.replace(" ", "");
 
-//Serial.println(":" + usuarioCartao);
-//Serial.println(":" + usuarioEncontrado);
-
    if (usuarioCartao == usuarioEncontrado) {
-      Serial.println("Usuário reconhecido corresponde ao registrado");
-    digitalWrite(RELAY_PIN, HIGH);  // Ativa o relé
-    delay(5000);                    // Mantém a trava aberta por 5 segundos
-    digitalWrite(RELAY_PIN, LOW);   // Desativa o relé
+
+
+    Serial.println("Usuário reconhecido corresponde ao registrado");
     const char* message = "open";
+    executeAction = 1;
     esp_err_t result = esp_now_send(partnerMacAddress_ESP01, (uint8_t *)message, strlen(message) + 1); // Envia a mensagem para abrir a fechadura
 
     if (result == ESP_OK)
       {
         Serial.println("Mensagem para ESP01 enviada com sucesso");
-      }
+         }
       else
       {
         Serial.println("Erro ao enviar a mensagem para ESP01");
       }
 } else {
-    Serial.println("Usuário não reconhecido");
+    Serial.println("Usuário reconhecido não corresponde ao cartão");
 }
     }
+if (status) {
+timeClient.update();
+  }
 }
 
 esp_now_peer_info_t peerInfo;
@@ -308,6 +345,8 @@ esp_now_peer_info_t peerInfo;
 void setup()
 {
   Serial.begin(115200);
+
+
 
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_RED, OUTPUT);
@@ -325,28 +364,13 @@ void setup()
   readFile(FILENAME);
 
   // Conectando ao Wi-Fi
-//  WiFi.begin(ssid, password);
-//  while (WiFi.status() != WL_CONNECTED)
-//  {
-//    delay(1000);
-//    Serial.println("Conectando WiFi..");
-//    // Configura o fuso horário (GMT-3:00 para São Paulo, Brasil)
-//    //  setTimeOffset(-3 * 3600);
-//    timeClient.begin();
-//  }
-
- if (!WiFi.config(local_IP, gateway, subnet))
-  {
-    Serial.println("STA Failed to configure");
-  }
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED)
   {
-    delay(500);
-    Serial.print(".");
+    delay(1000);
+    Serial.println("Conectando WiFi..");
+    timeClient.begin();
   }
-  Serial.println("");
-  Serial.println("WiFi connected");
   
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
@@ -358,13 +382,17 @@ void setup()
   /* Assign the RTDB URL (required) */
   config.database_url = DATABASE_URL;
 
-  // auth.user.email = USER_EMAIL;
-  // auth.user.password = USER_PASSWORD;
+ /* Assign the callback function for the long running token generation task */
+  config.token_status_callback = tokenStatusCallback; // see addons/TokenHelper.h
 
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
+
+  
   /* Sign up */
   if (Firebase.signUp(&config, &auth, "", ""))
   {
-    Serial.println("ok");
+    Serial.println("Fibebase conectado no setup()");
     signupOK = true;
   }
   else
@@ -372,16 +400,6 @@ void setup()
     Serial.printf("%s\n", config.signer.signupError.message.c_str());
   }
 
-  /* Assign the callback function for the long running token generation task */
-  config.token_status_callback = tokenStatusCallback; // see addons/TokenHelper.h
-
-  Firebase.begin(&config, &auth);
-  Firebase.reconnectWiFi(true);
-
-  // client.setServer(mqtt_server, mqtt_port);
-  // client.setCallback(callback);
-
-  // Inicializar o ESP-NOW
   if (esp_now_init() != ESP_OK)
   {
     Serial.println("Erro ao inicializar o ESP-NOW");
@@ -391,8 +409,6 @@ void setup()
   // Configurar a função de callback para receber mensagens
   esp_now_register_recv_cb(OnDataRecv);
 
-  // Registrar o parceiro
-  // esp_now_peer_info_t peerInfo;
   memcpy(peerInfo.peer_addr, partnerMacAddress, 6);
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
@@ -402,7 +418,6 @@ void setup()
     Serial.println("Falha ao adicionar o primeiro parceiro");
     return;
   }
-  // Se chegou aqui, significa que o parceiro foi adicionado com sucesso.
   Serial.println("Primeiro parceiro adicionado com sucesso!");
 
    memcpy(peerInfo.peer_addr, partnerMacAddress_ESP01, 6);
@@ -411,7 +426,6 @@ void setup()
     Serial.println("Falha ao adicionar o segundo parceiro (ESP-01)");
     return;
   }
-  // Se chegou aqui, significa que o parceiro foi adicionado com sucesso.
   Serial.println("Segundo parceiro (ESP-01) adicionado com sucesso!");
 
   // Rotas.
@@ -473,15 +487,45 @@ void setup()
           Serial.println("Cadastrando novo usuário");
           addNewUser(id_data, info_data);
           sucess_msg = "Novo usuário cadastrado.";
+
           request->send(SPIFFS, "/sucess.html", String(), false, processor);
+         
+          timeClient.update();
+ 
+    if (Firebase.ready() && signupOK)
+    {
+        updateDateTime(); // Atualiza a variável dateTime
+
+     FirebaseJson json;
+     
+     json.set("data", dateTime);
+     json.set("id", uidTag);
+     json.set("device", "RFID");
+
+    String path = "users/";
+  path += uidTag; // Usando o timestamp como ID único
+
+  if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
+    Serial.println("Dados cadastrados com sucesso para Firebase!");
+  } else {
+    Serial.println("Falha no cadastro de dados no Firebase: " + fbdo.errorReason());
+  }
+      
+    }
+    else
+    {
+      Serial.println("Falha de conexão com Firebase");
+      Serial.println("Motivo: " + fbdo.errorReason());
+    }
+
         }
         else {
           Serial.printf("Usuário numero %d ja existe no banco de dados\n", user_index);
           failure_msg = "Ja existe um usuário cadastrado.";
           request->send(SPIFFS, "/failure.html", String(), false, processor);
         } });
-  server.on("/logo.jpg", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(SPIFFS, "/logo.jpg", "image/jpg"); });
+  server.on("/logo-univesp.png", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(SPIFFS, "/logo-univesp.png", "image/jpg"); });
 
             server.on("/download", HTTP_GET, [](AsyncWebServerRequest *request) {
   // Verifica se o arquivo existe
@@ -499,18 +543,11 @@ void setup()
   // Inicia o serviço
   server.begin();
 
-  // Configure time //<<sheets
-  configTime(0, 0, ntpServer); // Configura o tempo utilizando o servidor NTP //<<sheets
+configTime(-3 * 3600, 0, ntpServer);
 }
 
 void loop()
 {
-
-  // if (!client.connected())
-  // {
-  //   reconnect();
-  // }
-  // client.loop();
 
   // Procure por novos cartões.
   if (!mfrc522.PICC_IsNewCardPresent())
@@ -559,11 +596,11 @@ void loop()
       esp_err_t result = esp_now_send(partnerMacAddress, (uint8_t *)message.c_str(), message.length() + 1); // +1 para incluir o caractere nulo no final
       if (result == ESP_OK)
       {
-        Serial.println("Mensagem ESPNOW enviada com sucesso");
+        Serial.println("Mensagem enviada para ESP32-CAM com sucesso");
       }
       else
       {
-        Serial.println("Erro ao enviar a mensagem");
+        Serial.println("Erro ao enviar a mensagem para ESP32-CAM");
       }
 
     }
@@ -573,7 +610,7 @@ void loop()
 //      digitalWrite(LED_GREEN, HIGH);
 
        String command = "start_recognition";
-       String userID = uidTag; // Substitua "123" pela string do ID do usuário real
+       String userID = uidTag;
        String message = command + ":" + userID;
        usuarioCartao = userID;
 
@@ -593,6 +630,12 @@ void loop()
 //    digitalWrite(LED_GREEN, LOW);
 //    digitalWrite(LED_RED, LOW);
 
+if (executeAction == 1) {
+        Serial.println("Executando ação específica!");
+
+timeClient.update();
+  Serial.println(timeClient.getFormattedTime());  // Imprime a hora formatada no Serial Monitor
+  
     if (Firebase.ready() && signupOK)
     {
         updateDateTime(); // Atualiza a variável dateTime
@@ -600,11 +643,11 @@ void loop()
      FirebaseJson json;
      json.set("id", uidTag);
      json.set("data", dateTime);
-     json.set("device", "RFID");
+     json.set("device", "CAM");
 
     String path = "entrys/";
   path += String(millis()); // Usando o timestamp como ID único
-
+  Serial.println("millis" + String(millis()));
   if (Firebase.RTDB.setJSON(&fbdo, path.c_str(), &json)) {
     Serial.println("Dados enviados com sucesso para Firebase!");
   } else {
@@ -614,9 +657,13 @@ void loop()
     }
     else
     {
-      Serial.println("FAILED");
-      Serial.println("REASON: " + fbdo.errorReason());
+      Serial.println("Falha de conexão com Firebase");
+      Serial.println("Motivo: " + fbdo.errorReason());
     }
+
+           executeAction = 0;  // Reset da flag após a execução
+    }
+    delay(100); // Delay para loop, ajuste conforme necessário
   }
 }
 
@@ -625,8 +672,8 @@ void updateDateTime()
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo))
   {
-    Serial.println("Failed to obtain time");
-    dateTime = "Unavailable"; // Atribui um valor padrão se falhar
+    Serial.println("Falha ao obter o horário local.");
+    dateTime = "Indisponível"; // Atribui um valor padrão se falhar
     return;
   }
 

@@ -1,31 +1,96 @@
-html {
+/* html {
     font-family: Helvetica;
     display: inline-block;
     margin: 0px auto;
     background: white;
-}
+} */
+
+body {
+    color: #ffffff;
+    font-family: "Trebuchet MS" !important;
+    font-size: 12px;
+    margin: 0px;
+    width: 100%;
+  }
+
+header {
+    background-color: #808080;
+    padding: 20px;
+  }
+
+  .logo {
+    margin-right: 100px;
+    max-height: 70px;
+    text-align: left;
+    vertical-align: middle;
+  }
+  
+
+
 h1{
-    font-weight: bold;
+    /* font-weight: bold;
     text-align: center;
     color: #1BAE85;
     font-size: 32px;
-    margin-bottom: 32px;
-}
-label, p {
-    font-size: 16px;
+    margin-bottom: 32px; */
+    color: black;
+    display: inline;
+    font-size: 25px;
+    padding: 4px;
     text-align: center;
+    /* text-shadow: 2px 2px 2px black; */
+    vertical-align: middle;
+}
+
+footer {
+    background: #303030;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 30px;
+    text-align: center;
+  }
+
+
+label, p {
+    /* font-size: 16px;
+    text-align: center; */
+    color: black;
+    font-size: 14px;
 }
 p{
     margin-bottom: 52px;
 }
-.inputs{
+/* .inputs{
     font-size: 16px;
     margin-bottom: 10px;
     width: 240px;
     margin: 12px 0 22px 0;
+} */
+
+.inputs {
+  width: 100%; /* Faz com que o input ocupe a largura total do contêiner form */
+  padding: 8px 10px; /* Adiciona padding interno para fazer o texto não tocar nas bordas */
+  margin-bottom: 10px; /* Adiciona mais espaço abaixo de cada input antes do próximo elemento */
+  box-sizing: border-box; /* Inclui padding e borda na largura total do input, evitando que ele ultrapasse o tamanho desejado */
 }
+
+#container input[type="submit"]:hover {
+  background-color: #45a049; /* Muda a cor de fundo ao passar o mouse para dar feedback visual */
+}
+
+#container label {
+  display: block; /* Faz com que cada label ocupe sua própria linha */
+  margin-bottom: 10px; /* Adiciona uma margem na parte inferior de cada label */
+  color: #333; /* Melhora a legibilidade em fundos claros */
+}
+
+  inputs:focus {
+    box-shadow: 1px 1px 4px rgb(9, 56, 97);
+  }
+
 .button,.button-ok,.button-cancel {
-    background-color:#126e54;
+    background-color:#991313;
     border: none;
     color: white;
     padding: 12px 20px;
@@ -35,42 +100,56 @@ p{
     width: 100%;
 }
 .button:hover, .button-ok:hover {
-	background-color: #1BAE85;
+	background-color: #991313;
+    
 }
 .button-ok,.button-cancel {
     width: 49%;
 }
 .button-cancel{
-    background-color: #991f00;
+    background-color: #991313;
 }
 .button-cancel:hover{
-    background-color: #cc2900;
+    background-color: #991313;
 }
 #container {
+    /* display: flex; Ativa Flexbox */
     width: fit-content;
     height: fit-content;
     min-width: 300px;
     padding: 22px 22px;
     margin: 22px auto 0 auto;
-    background-color: white;
+    background-color: #e3e3e3;
     border: 1px solid #d1d1d1;
     border-radius: 5px;
+    align-items: center; /* Centraliza horizontalmente */
 }
-#form-div, #logo-div{
-    width: fit-content;
+#form-div {
+    /* width: fit-content;
     height: fit-content;
-    margin: 0 auto 0 auto;
+    margin: 0 auto 0 auto; */
+    background-color: #e3e3e3;
+    padding: 20px;
 }
-#logo-div{
+/* #logo-div{
     width: 250px;
     height: fit-content;
     margin: 22px auto 22px auto;
-}
-img { 
+    
+} */
+
+/* img { 
     width:100%; 
     height:100%; 
-} 
-table {
+}  */
+
+/* .logo {
+    margin-right: 100px;
+    max-height: 70px;
+    text-align: left;
+    vertical-align: middle;
+  } */
+/* table {
     width: 100%;
     border-collapse: collapse;
     border: 1px;
@@ -85,4 +164,72 @@ table {
   }
   hr{
     margin: 22px 0 22px 0;
+  } */
+
+  table {
+    border-spacing: 0px;
+    width: 100%;
   }
+
+  th {
+    background: #ffffff;
+    font-size: 13px;
+    padding: 2px;
+  }
+
+  td {
+    background: #e3e3e3;
+    font-size: 13px;
+    text-align: center;
+    color: black; /* Adiciona cor preta ao texto dentro do <td> */
+}
+
+  #remote-cam, div#remote-cam-container {
+    margin: 0; /* Remove margens */
+    padding: 0; /* Remove paddings */
+}
+
+  #remote-cam {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border: none;
+    display: block;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+
+div#remote-cam-container {
+  overflow: hidden; /* Oculta qualquer conteúdo que exceda o tamanho do contêiner */
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  width: 100%; /* Certifique-se que o contêiner ocupa a largura total */
+  max-width: 800px; /* Você pode definir um max-width para controlar o tamanho máximo */
+  margin: auto; /* Isso centralizará o contêiner se for menor que o viewport */
+  /* max-width: 100%; /* Não permite que o contêiner exceda a largura do viewport */
+  height: auto; /* Altura automática baseada na proporção */
+}
+
+@media (max-width: 600px) {
+  div#remote-cam-container {
+      overflow: hidden;
+  }
+  #remote-cam {
+      width: 100%;
+      height: auto; /* Ajusta a altura conforme necessário */
+  }
+}
+
+tbody button {
+  background-color:#991313;
+  border: none;
+  color: white;
+  padding: 12px 20px;
+  text-decoration: none;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+}
